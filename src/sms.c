@@ -56,28 +56,27 @@ on_sms_send_msg(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	UserRequest *ur = NULL;
 
 	gsize length;
-	guchar *decoded_sca = NULL;
-	guchar *decoded_tpdu = NULL;
+	guchar *decoded_buff = NULL;
 
 	if (check_access_control(invocation, AC_SMS, "x") == FALSE)
 		return FALSE;
 
 	memset(&sendUmtsMsg, 0 , sizeof(struct treq_sms_send_umts_msg));
 
-	decoded_sca = g_base64_decode(sca, &length);
+	decoded_buff = g_base64_decode(sca, &length);
 	if (length > SMS_ENCODED_SCA_LEN_MAX)
 		goto invalid_param;
-	memcpy(&(sendUmtsMsg.msgDataPackage.sca[0]), decoded_sca, length);
-	g_free(decoded_sca);
+	memcpy(&(sendUmtsMsg.msgDataPackage.sca[0]), decoded_buff, length);
+	g_free(decoded_buff);
 
 	sendUmtsMsg.msgDataPackage.msgLength = tpdu_length;
 	dbg("tpdu_length = 0x%x", tpdu_length);
 
-	decoded_tpdu = g_base64_decode(tpdu_data, &length);
+	decoded_buff = g_base64_decode(tpdu_data, &length);
 	if (length > SMS_SMDATA_SIZE_MAX + 1)
 		goto invalid_param;
-	memcpy(&(sendUmtsMsg.msgDataPackage.tpduData[0]), decoded_tpdu, length);
-	g_free(decoded_tpdu);
+	memcpy(&(sendUmtsMsg.msgDataPackage.tpduData[0]), decoded_buff, length);
+	g_free(decoded_buff);
 
 	sendUmtsMsg.more = moreMsg;
 
@@ -94,6 +93,8 @@ on_sms_send_msg(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	return TRUE;
 
 invalid_param:
+	g_free(decoded_buff);
+
 	telephony_sms_complete_send_msg(sms, invocation, SMS_INVALID_PARAMETER);
 	tcore_user_request_unref(ur);
 
@@ -140,8 +141,7 @@ on_sms_save_msg(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	UserRequest *ur = NULL;
 
 	gsize length;
-	guchar *decoded_sca = NULL;
-	guchar *decoded_tpdu = NULL;
+	guchar *decoded_buff = NULL;
 
 	if (check_access_control(invocation, AC_SMS, "w") == FALSE)
 		return FALSE;
@@ -149,19 +149,19 @@ on_sms_save_msg(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	saveMsg.simIndex = 0xffff;
 	saveMsg.msgStatus = arg_msg_status;
 
-	decoded_sca = g_base64_decode(arg_sca, &length);
+	decoded_buff = g_base64_decode(arg_sca, &length);
 	if (length > SMS_ENCODED_SCA_LEN_MAX)
 		goto invalid_param;
-	memcpy(&(saveMsg.msgDataPackage.sca[0]), decoded_sca, length);
-	g_free(decoded_sca);
+	memcpy(&(saveMsg.msgDataPackage.sca[0]), decoded_buff, length);
+	g_free(decoded_buff);
 
 	saveMsg.msgDataPackage.msgLength = arg_tpdu_length;
 
-	decoded_tpdu = g_base64_decode(arg_tpdu_data, &length);
+	decoded_buff = g_base64_decode(arg_tpdu_data, &length);
 	if (length > SMS_SMDATA_SIZE_MAX + 1)
 		goto invalid_param;
-	memcpy(&(saveMsg.msgDataPackage.tpduData[0]), decoded_tpdu, length);
-	g_free(decoded_tpdu);
+	memcpy(&(saveMsg.msgDataPackage.tpduData[0]), decoded_buff, length);
+	g_free(decoded_buff);
 
 	ur = MAKE_UR(ctx, sms, invocation);
 	tcore_user_request_set_data(ur, sizeof(struct treq_sms_save_msg), &saveMsg);
@@ -176,6 +176,8 @@ on_sms_save_msg(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	return TRUE;
 
 invalid_param:
+	g_free(decoded_buff);
+
 	telephony_sms_complete_save_msg(sms, invocation,
 				SMS_INVALID_PARAMETER, -1);
 	tcore_user_request_unref(ur);
@@ -273,6 +275,7 @@ on_sms_set_sca(TelephonySms *sms, GDBusMethodInvocation *invocation,
         struct treq_sms_set_sca setSca;
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
+	guchar *decoded_sca = NULL;
 
 	if (check_access_control(invocation, AC_SMS, "w") == FALSE)
 		return FALSE;
@@ -295,7 +298,6 @@ on_sms_set_sca(TelephonySms *sms, GDBusMethodInvocation *invocation,
 		return  FALSE;
 	} else {
 		gsize length;
-		guchar *decoded_sca = NULL;
 
 		decoded_sca = g_base64_decode(arg_dialNumber, &length);
 		if (length > SMS_SMSP_ADDRESS_LEN)
@@ -317,6 +319,8 @@ on_sms_set_sca(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	return TRUE;
 
 invalid_param:
+	g_free(decoded_sca);
+
 	telephony_sms_complete_set_sca(sms, invocation, SMS_INVALID_PARAMETER);
 	tcore_user_request_unref(ur);
 
@@ -395,6 +399,8 @@ on_sms_set_cb_config(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	return TRUE;
 
 invalid_param:
+	g_free(decoded_msgId);
+
 	telephony_sms_complete_set_cb_config(sms, invocation,
 					SMS_INVALID_PARAMETER);
 	tcore_user_request_unref(ur);
@@ -493,27 +499,26 @@ on_sms_set_delivery_report(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	UserRequest *ur = NULL;
 
 	gsize length;
-	guchar *decoded_sca = NULL;
-	guchar *decoded_tpdu = NULL;
+	guchar *decoded_buff = NULL;
 
 	if (check_access_control(invocation, AC_SMS, "w") == FALSE)
 		return FALSE;
 
 	memset(&deliveryReport, 0, sizeof(struct treq_sms_set_delivery_report));
 
-	decoded_sca = g_base64_decode(arg_sca, &length);
+	decoded_buff = g_base64_decode(arg_sca, &length);
 	if (length > SMS_ENCODED_SCA_LEN_MAX)
 		goto invalid_param;
-	memcpy(&(deliveryReport.dataInfo.sca[0]), decoded_sca, length);
-	g_free(decoded_sca);
+	memcpy(&(deliveryReport.dataInfo.sca[0]), decoded_buff, length);
+	g_free(decoded_buff);
 
 	deliveryReport.dataInfo.msgLength = arg_tpdu_length;
 
-	decoded_tpdu = g_base64_decode(arg_tpdu_data, &length);
+	decoded_buff = g_base64_decode(arg_tpdu_data, &length);
 	if (length > SMS_SMDATA_SIZE_MAX + 1)
 		goto invalid_param;
-	memcpy(&(deliveryReport.dataInfo.tpduData[0]), decoded_tpdu, length);
-	g_free(decoded_tpdu);
+	memcpy(&(deliveryReport.dataInfo.tpduData[0]), decoded_buff, length);
+	g_free(decoded_buff);
 
 	deliveryReport.rspType = arg_rpCause;
 
@@ -530,6 +535,8 @@ on_sms_set_delivery_report(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	return TRUE;
 
 invalid_param:
+	g_free(decoded_buff);
+
 	telephony_sms_complete_set_delivery_report(sms, invocation,
 						SMS_INVALID_PARAMETER);
 	tcore_user_request_unref(ur);
@@ -619,9 +626,7 @@ on_sms_set_sms_params(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	UserRequest *ur = NULL;
 
 	gsize length;
-	guchar *decoded_alphaId = NULL;
-	guchar *decoded_destDialNum = NULL;
-	guchar *decoded_scaDialNum = NULL;
+	guchar *decoded_buff = NULL;
 
 	if (check_access_control(invocation, AC_SMS, "w") == FALSE)
 		return FALSE;
@@ -632,34 +637,34 @@ on_sms_set_sms_params(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	setParams.params.recordLen = arg_recordLen;
 	setParams.params.alphaIdLen = arg_alphaIdLen;
 
-	decoded_alphaId = g_base64_decode(arg_alphaId, &length);
+	decoded_buff = g_base64_decode(arg_alphaId, &length);
 	if (length > SMS_SMSP_ALPHA_ID_LEN_MAX + 1)
 		goto invalid_param;
-	memcpy(&(setParams.params.szAlphaId[0]), decoded_alphaId, length);
-	g_free(decoded_alphaId);
+	memcpy(&(setParams.params.szAlphaId[0]), decoded_buff, length);
+	g_free(decoded_buff);
 
 	setParams.params.paramIndicator = arg_paramIndicator;
 	setParams.params.tpDestAddr.dialNumLen = arg_destAddr_DialNumLen;
 	setParams.params.tpDestAddr.typeOfNum = arg_destAddr_Ton;
 	setParams.params.tpDestAddr.numPlanId = arg_destAddr_Npi;
 
-	decoded_destDialNum = g_base64_decode(arg_destAddr_DiallingNum, &length);
+	decoded_buff = g_base64_decode(arg_destAddr_DiallingNum, &length);
 	if (length > SMS_SMSP_ADDRESS_LEN + 1)
 		goto invalid_param;
 	memcpy(&(setParams.params.tpDestAddr.diallingNum[0]),
-					decoded_destDialNum, length);
-	g_free(decoded_destDialNum);
+					decoded_buff, length);
+	g_free(decoded_buff);
 
 	setParams.params.tpSvcCntrAddr.dialNumLen = arg_svcCntrAddr_DialNumLen;
 	setParams.params.tpSvcCntrAddr.typeOfNum = arg_SvcCntrAddr_Ton;
 	setParams.params.tpSvcCntrAddr.numPlanId = arg_svcCntrAddr_Npi;
 
-	decoded_scaDialNum = g_base64_decode(arg_svcCntrAddr_DialNum, &length);
+	decoded_buff = g_base64_decode(arg_svcCntrAddr_DialNum, &length);
 	if (length > SMS_SMSP_ADDRESS_LEN + 1)
 		goto invalid_param;
 	memcpy(&(setParams.params.tpSvcCntrAddr.diallingNum[0]),
-					decoded_scaDialNum, length);
-	g_free(decoded_scaDialNum);
+					decoded_buff, length);
+	g_free(decoded_buff);
 
 	setParams.params.tpProtocolId = arg_protocolId;
 	setParams.params.tpDataCodingScheme = arg_dataCodingScheme;
@@ -678,6 +683,8 @@ on_sms_set_sms_params(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	return TRUE;
 
 invalid_param:
+	g_free(decoded_buff);
+
 	telephony_sms_complete_set_sms_params(sms, invocation,
 					SMS_INVALID_PARAMETER);
 	tcore_user_request_unref(ur);
