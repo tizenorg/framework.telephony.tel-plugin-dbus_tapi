@@ -64,8 +64,15 @@ on_sms_send_msg(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	memset(&sendUmtsMsg, 0 , sizeof(struct treq_sms_send_umts_msg));
 
 	decoded_buff = g_base64_decode(sca, &length);
+<<<<<<< HEAD
 	if (length > SMS_ENCODED_SCA_LEN_MAX)
 		goto invalid_param;
+=======
+	if ((length > SMS_ENCODED_SCA_LEN_MAX)
+			|| (decoded_buff[0] > SMS_SMSP_ADDRESS_LEN))
+		goto invalid_param;
+
+>>>>>>> Fix crash when TPDU or SCA is corrupted
 	memcpy(&(sendUmtsMsg.msgDataPackage.sca[0]), decoded_buff, length);
 	g_free(decoded_buff);
 
@@ -73,7 +80,11 @@ on_sms_send_msg(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	dbg("tpdu_length = 0x%x", tpdu_length);
 
 	decoded_buff = g_base64_decode(tpdu_data, &length);
+<<<<<<< HEAD
 	if (length > SMS_SMDATA_SIZE_MAX + 1)
+=======
+	if (length > SMS_SMDATA_SIZE_MAX + 1 || ((gsize)tpdu_length != length))
+>>>>>>> Fix crash when TPDU or SCA is corrupted
 		goto invalid_param;
 	memcpy(&(sendUmtsMsg.msgDataPackage.tpduData[0]), decoded_buff, length);
 	g_free(decoded_buff);
