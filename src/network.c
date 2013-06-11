@@ -43,6 +43,14 @@
 #include "generated-code.h"
 #include "common.h"
 
+static inline GVariant *network_build_empty_array()
+{
+	GVariantBuilder b;
+
+	g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
+
+	return g_variant_builder_end(&b);
+}
 
 static char *_get_network_name_by_plmn(CoreObject *o, const char *plmn)
 {
@@ -235,7 +243,8 @@ on_network_search (TelephonyNetwork *network,
 	tcore_user_request_set_command(ur, TREQ_NETWORK_SEARCH);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		telephony_network_complete_search(network, invocation, NULL, ret);
+		GVariant *network_response = network_build_empty_array();
+		telephony_network_complete_search(network, invocation, network_response, ret);
 		tcore_user_request_unref(ur);
 	}
 
@@ -560,7 +569,8 @@ on_network_get_preferred_plmn (TelephonyNetwork *network,
 	tcore_user_request_set_command(ur, TREQ_NETWORK_GET_PREFERRED_PLMN);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		telephony_network_complete_get_preferred_plmn(network, invocation, NULL, ret);
+		GVariant *network_response = network_build_empty_array();
+		telephony_network_complete_get_preferred_plmn(network, invocation, network_response, ret);
 		tcore_user_request_unref(ur);
 	}
 
@@ -608,7 +618,8 @@ on_network_get_neighboring_cell_info (TelephonyNetwork *network,
 	tcore_user_request_set_command(ur, TREQ_NETWORK_GET_NEIGHBORING_CELL_INFO);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		telephony_network_complete_get_ngbr_cell_info(network, invocation, NULL, ret);
+		GVariant *network_response = network_build_empty_array();
+		telephony_network_complete_get_ngbr_cell_info(network, invocation, network_response, ret);
 		tcore_user_request_unref(ur);
 	}
 
