@@ -484,7 +484,7 @@ GVariant* sat_manager_caching_setup_menu_info(struct custom_data *ctx, const cha
 		dbg("setup_menu_tlv->next_act_ind_list.cnt == 0");
 
 		for(index = 0; index < menu_cnt; index++){
-			gint item_len;
+			gushort item_len;
 			gchar item_str[SAT_ITEM_TEXT_LEN_MAX + 1];
 
 			if(!setup_menu_tlv->alpha_id.alpha_data_len)
@@ -508,7 +508,7 @@ GVariant* sat_manager_caching_setup_menu_info(struct custom_data *ctx, const cha
 		dbg("setup_menu_tlv->next_act_ind_list.cnt == 0");
 
 		for(index = 0; index < menu_cnt; index++){
-			gint item_len;
+			gushort item_len;
 			gchar item_str[SAT_ITEM_TEXT_LEN_MAX + 1];
 
 			if(setup_menu_tlv->alpha_id.alpha_data_len == 0)
@@ -561,7 +561,8 @@ GVariant* sat_manager_display_text_noti(struct custom_data *ctx, const char *plu
 	GVariant *display_text = NULL;
 	struct sat_manager_queue_data q_data;
 
-	gint command_id = 0, text_len =0, duration= 0, tmp_duration = 0;
+	gushort text_len = 0;
+	gint command_id = 0, duration= 0, tmp_duration = 0;
 	gboolean immediately_rsp = FALSE, high_priority = FALSE, user_rsp_required = FALSE;
 	gchar text[SAT_TEXT_STRING_LEN_MAX];
 	GVariant *icon_id = NULL;
@@ -661,7 +662,8 @@ GVariant* sat_manager_select_item_noti(struct custom_data *ctx, const char *plug
 	struct sat_manager_queue_data q_data;
 
 	int index = 0;
-	gint command_id = 0, default_item_id = 0, menu_cnt = 0, text_len =0;
+	gushort text_len = 0;
+	gint command_id = 0, default_item_id = 0, menu_cnt = 0;
 	gboolean help_info = FALSE;
 	gchar text[SAT_TEXT_STRING_LEN_MAX];
 	GVariantBuilder *v_builder = NULL;
@@ -728,7 +730,7 @@ GVariant* sat_manager_select_item_noti(struct custom_data *ctx, const char *plug
 	//items
 	v_builder = g_variant_builder_new(G_VARIANT_TYPE ("a(iis)"));
 	for(index= 0; index< menu_cnt; index++){
-		gint item_len;
+		gushort item_len;
 		gchar item_str[SAT_ITEM_TEXT_LEN_MAX + 1];
 
 		memset(&item_str, 0 , SAT_ITEM_TEXT_LEN_MAX + 1);
@@ -782,7 +784,8 @@ GVariant* sat_manager_get_inkey_noti(struct custom_data *ctx, const char *plugin
 	struct sat_manager_queue_data q_data;
 
 	gint command_id = 0, key_type = 0, input_character_mode = 0;
-	gint text_len = 0, duration = 0, tmp_duration = 0;
+	gushort text_len = 0;
+	gint duration = 0, tmp_duration = 0;
 	gboolean b_numeric = FALSE, b_help_info = FALSE;
 	gchar text[SAT_TEXT_STRING_LEN_MAX];
 	GVariant *icon_id = NULL;
@@ -870,7 +873,8 @@ GVariant* sat_manager_get_input_noti(struct custom_data *ctx, const char *plugin
 	struct sat_manager_queue_data q_data;
 
 	gint command_id = 0, input_character_mode = 0;
-	gint text_len = 0, def_text_len = 0, rsp_len_min = 0, rsp_len_max = 0;
+	gushort text_len = 0, def_text_len = 0;
+	gint rsp_len_min = 0, rsp_len_max = 0;
 	gboolean b_numeric = FALSE, b_help_info = FALSE, b_echo_input = FALSE;
 	gchar text[SAT_TEXT_STRING_LEN_MAX], def_text[SAT_TEXT_STRING_LEN_MAX];
 	GVariant *icon_id = NULL;
@@ -967,7 +971,7 @@ GVariant* sat_manager_play_tone_noti(struct custom_data *ctx, const char *plugin
 	struct sat_manager_queue_data q_data;
 
 	gint command_id = 0, tone_type = 0, duration = 0, tmp_duration = 0;
-	gint text_len = 0;
+	gushort text_len = 0;
 	gchar text[SAT_TEXT_STRING_LEN_MAX];
 	GVariant *icon_id = NULL;
 
@@ -1042,7 +1046,8 @@ GVariant* sat_manager_send_sms_noti(struct custom_data *ctx, const char *plugin_
 	int index = 0;
 	gint command_id = 0, ton = 0, npi = 0, tpdu_type = 0;
 	gboolean b_packing_required = FALSE;
-	gint text_len = 0, number_len = 0, tpdu_data_len= 0;
+	gushort text_len = 0;
+	gint number_len = 0, tpdu_data_len = 0;
 	gchar text[SAT_TEXT_STRING_LEN_MAX], dialling_number[SAT_DIALING_NUMBER_LEN_MAX];
 	GVariantBuilder *builder = NULL;
 	GVariant *tpdu_data = NULL;
@@ -1132,7 +1137,8 @@ GVariant* sat_manager_send_ss_noti(struct custom_data *ctx, const char *plugin_n
 	struct sat_manager_queue_data q_data;
 
 	gint command_id = 0, ton = 0, npi = 0;
-	gint text_len = 0, ss_str_len = 0;
+	gushort text_len = 0;
+	guchar ss_str_len = 0;
 	gchar text[SAT_TEXT_STRING_LEN_MAX], ss_string[SAT_SS_STRING_LEN_MAX];
 	GVariant *icon_id = NULL;
 
@@ -1203,8 +1209,8 @@ GVariant* sat_manager_send_ussd_noti(struct custom_data *ctx, const char *plugin
 	GVariant *send_ussd = NULL;
 	struct sat_manager_queue_data q_data;
 
-	gint command_id = 0;
-	gint text_len = 0, ussd_str_len = 0;
+	gint command_id = 0;	
+	gushort text_len = 0, ussd_str_len = 0;
 	gchar text[SAT_TEXT_STRING_LEN_MAX], ussd_string[SAT_USSD_STRING_LEN_MAX];
 	GVariant *icon_id = NULL;
 
@@ -1274,7 +1280,8 @@ GVariant* sat_manager_setup_call_noti(struct custom_data *ctx, const char *plugi
 	GVariant *setup_call = NULL;
 	struct sat_manager_queue_data q_data;
 
-	gint command_id = 0, call_type = 0, confirm_text_len = 0, text_len = 0, duration = 0;
+	gushort text_len = 0, confirm_text_len = 0;
+	gint command_id = 0, call_type = 0, duration = 0;
 	gchar confirm_text[SAT_TEXT_STRING_LEN_MAX], text[SAT_TEXT_STRING_LEN_MAX], call_number[SAT_DIALING_NUMBER_LEN_MAX];
 	GVariant *icon_id = NULL;
 
@@ -1436,7 +1443,7 @@ GVariant* sat_manager_setup_idle_mode_text_noti(struct custom_data *ctx, const c
 	struct sat_manager_queue_data q_data;
 
 	gint command_id = 0;
-	gint text_len = 0;
+	gushort text_len = 0;
 	gchar text[SAT_TEXT_STRING_LEN_MAX];
 	GVariant *icon_id = NULL;
 
@@ -1498,7 +1505,8 @@ GVariant* sat_manager_open_channel_noti(struct custom_data *ctx, const char *plu
 
 	gint command_id = 0, bearer_type = 0, protocol_type = 0, dest_addr_type = 0;
 	gboolean immediate_link = FALSE, auto_reconnection = FALSE, bg_mode = FALSE;
-	gint text_len = 0, buffer_size = 0, port_number = 0;
+	gushort text_len = 0;
+	gint buffer_size = 0, port_number = 0;
 	gchar text[SAT_ALPHA_ID_LEN_MAX], dest_address[SAT_OTHER_ADDR_LEN_MAX];
 	GVariant *icon_id = NULL;
 	GVariant *bearer_param = NULL;
@@ -1652,7 +1660,7 @@ GVariant* sat_manager_open_channel_noti(struct custom_data *ctx, const char *plu
 
 			//bearer detail
 			gint other_addr_type = 0;
-			gint login_len = 0, pwd_len = 0;
+			gushort login_len = 0, pwd_len = 0;
 			gchar other_address[SAT_OTHER_ADDR_LEN_MAX];
 			gchar login[SAT_TEXT_STRING_LEN_MAX], pwd[SAT_TEXT_STRING_LEN_MAX];
 
@@ -1738,7 +1746,7 @@ GVariant* sat_manager_close_channel_noti(struct custom_data *ctx, const char *pl
 	struct sat_manager_queue_data q_data;
 
 	gint command_id = 0, channel_id = 0;
-	gint text_len = 0;
+	gushort text_len = 0;
 	gchar text[SAT_ALPHA_ID_LEN_MAX];
 	GVariant *icon_id = NULL;
 
@@ -1783,7 +1791,8 @@ GVariant* sat_manager_receive_data_noti(struct custom_data *ctx, const char *plu
 	struct sat_manager_queue_data q_data;
 
 	gint command_id = 0, channel_id = 0;
-	gint text_len = 0, channel_data_len = 0;
+	gushort text_len = 0;
+	gint channel_data_len = 0;
 	gchar text[SAT_ALPHA_ID_LEN_MAX];
 	GVariant *icon_id = NULL;
 
@@ -1832,7 +1841,7 @@ GVariant* sat_manager_send_data_noti(struct custom_data *ctx, const char *plugin
 	int index = 0;
 	gint command_id = 0, channel_id = 0, data_len = 0;
 	gboolean send_data_immediately = FALSE;
-	gint text_len = 0;
+	gushort text_len = 0;
 	gchar text[SAT_ALPHA_ID_LEN_MAX];
 	GVariantBuilder *builder = NULL;
 	GVariant *channel_data = NULL;
@@ -1987,7 +1996,8 @@ GVariant* sat_manager_send_dtmf_noti(struct custom_data *ctx, const char *plugin
 	struct sat_manager_queue_data q_data;
 
 	gint command_id = 0;
-	gint text_len =0, dtmf_str_len =0;
+	gushort text_len = 0;
+	gint dtmf_str_len =0;
 	gchar text[SAT_TEXT_STRING_LEN_MAX], dtmf_str[SAT_DTMF_STRING_LEN_MAX];
 	GVariant *icon_id = NULL;
 
@@ -2058,7 +2068,8 @@ GVariant* sat_manager_launch_browser_noti(struct custom_data *ctx, const char *p
 
 	gint command_id = 0;
 	gint browser_launch_type = 0, browser_id = 0;
-	gint url_len =0, text_len =0, gateway_proxy_len =0;
+	gint url_len =0;
+	gushort text_len = 0, gateway_proxy_len = 0;
 	gchar url[SAT_URL_LEN_MAX], text[SAT_TEXT_STRING_LEN_MAX], gateway_proxy[SAT_TEXT_STRING_LEN_MAX];
 	GVariant *icon_id = NULL;
 
