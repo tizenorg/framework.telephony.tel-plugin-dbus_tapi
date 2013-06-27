@@ -71,15 +71,12 @@ static gboolean on_sap_disconnect(TelephonySap *sap, GDBusMethodInvocation *invo
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 	TReturn ret;
-	struct treq_sap_req_disconnect req_disconn;
 
 	if (check_access_control(invocation, AC_SAP, "x") == FALSE)
 		return FALSE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
-	memset(&req_disconn, 0, sizeof(struct treq_sap_req_disconnect));
 
-	tcore_user_request_set_data(ur, sizeof(struct treq_sap_req_disconnect), &req_disconn);
 	tcore_user_request_set_command(ur, TREQ_SAP_REQ_DISCONNECT);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if(ret != TCORE_RETURN_SUCCESS) {
@@ -95,15 +92,12 @@ static gboolean on_sap_get_status(TelephonySap *sap, GDBusMethodInvocation *invo
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 	TReturn ret;
-	struct treq_sap_req_status req_status;
 
 	if (check_access_control(invocation, AC_SAP, "r") == FALSE)
 		return FALSE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
-	memset(&req_status, 0, sizeof(struct treq_sap_req_status));
 
-	tcore_user_request_set_data(ur, sizeof(struct treq_sap_req_status), &req_status);
 	tcore_user_request_set_command(ur, TREQ_SAP_REQ_STATUS);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if(ret != TCORE_RETURN_SUCCESS) {
@@ -119,15 +113,12 @@ static gboolean on_sap_get_atr(TelephonySap *sap, GDBusMethodInvocation *invocat
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 	TReturn ret;
-	struct treq_sap_req_atr req_atr;
 
 	if (check_access_control(invocation, AC_SAP, "r") == FALSE)
 		return FALSE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
-	memset(&req_atr, 0, sizeof(struct treq_sap_req_atr));
 
-	tcore_user_request_set_data(ur, sizeof(struct treq_sap_req_atr), &req_atr);
 	tcore_user_request_set_command(ur, TREQ_SAP_REQ_ATR);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if(ret != TCORE_RETURN_SUCCESS) {
@@ -256,15 +247,12 @@ static gboolean on_sap_get_card_reader_status(TelephonySap *sap, GDBusMethodInvo
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 	TReturn ret;
-	struct treq_sap_req_cardreaderstatus req_reader;
 
 	if (check_access_control(invocation, AC_SAP, "r") == FALSE)
 		return FALSE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
-	memset(&req_reader, 0, sizeof(struct treq_sap_req_cardreaderstatus));
 
-	tcore_user_request_set_data(ur, sizeof(struct treq_sap_req_cardreaderstatus), &req_reader);
 	tcore_user_request_set_command(ur, TREQ_SAP_REQ_CARDREADERSTATUS);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if(ret != TCORE_RETURN_SUCCESS) {
