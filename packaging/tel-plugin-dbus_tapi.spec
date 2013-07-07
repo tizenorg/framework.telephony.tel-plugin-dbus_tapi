@@ -1,6 +1,6 @@
 %define major 0
 %define minor 1
-%define patchlevel 217
+%define patchlevel 218
 Name: tel-plugin-dbus_tapi
 Summary: dbus-tapi plugin for telephony
 Version:    %{major}.%{minor}.%{patchlevel}

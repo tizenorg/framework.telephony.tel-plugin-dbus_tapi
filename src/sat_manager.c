@@ -394,7 +394,8 @@ GVariant* sat_manager_caching_setup_menu_info(struct custom_data *ctx, const cha
 	GVariant *setup_menu_info = NULL;
 	struct sat_manager_queue_data q_data;
 
-	gint command_id = 0, menu_cnt = 0, title_len =0;
+	gushort title_len = 0;
+	gint command_id = 0, menu_cnt = 0;
 	gboolean menu_present = FALSE, help_info = FALSE, updated = FALSE;
 	gchar main_title[SAT_ALPHA_ID_LEN_MAX];
 	GVariantBuilder *v_builder = NULL;
@@ -1566,7 +1567,7 @@ GVariant* sat_manager_open_channel_noti(struct custom_data *ctx, const char *plu
 
 			//bearer detail
 			gint ton = 0, npi = 0, time_duration1 = 0, time_duration2 = 0, other_addr_type = 0;
-			gint login_len = 0, pwd_len = 0;
+			gushort login_len = 0, pwd_len = 0;
 			gchar dialling_number[SAT_DIALING_NUMBER_LEN_MAX], sub_addr[SAT_SUB_ADDR_LEN_MAX];
 			gchar other_address[SAT_OTHER_ADDR_LEN_MAX];
 			gchar login[SAT_TEXT_STRING_LEN_MAX], pwd[SAT_TEXT_STRING_LEN_MAX];
@@ -1617,7 +1618,7 @@ GVariant* sat_manager_open_channel_noti(struct custom_data *ctx, const char *plu
 
 			//bearer detail
 			gint other_addr_type = 0;
-			gint login_len = 0, pwd_len = 0;
+			gushort login_len = 0, pwd_len = 0;
 			gchar network_access_name[SAT_NET_ACC_NAM_LEN_MAX];
 			gchar other_address[SAT_OTHER_ADDR_LEN_MAX];
 			gchar login[SAT_TEXT_STRING_LEN_MAX], pwd[SAT_TEXT_STRING_LEN_MAX];
@@ -1691,7 +1692,7 @@ GVariant* sat_manager_open_channel_noti(struct custom_data *ctx, const char *plu
 			//bearer param
 
 			//bearer detail
-			gint pwd_len = 0;
+			gushort pwd_len = 0;
 			gint remote_address_type =0, time_duration1 = 0, time_duration2 = 0;
 			gchar remote_address[SAT_REMOTE_ENTITY_ADDR_LEN_MAX];
 			gchar pwd[SAT_TEXT_STRING_LEN_MAX];
