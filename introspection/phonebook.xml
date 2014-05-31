@@ -1,0 +1,98 @@
+<node>
+
+	<interface name="org.tizen.telephony.Phonebook">
+		<method name="GetInitStatus">
+			<arg direction="out" type="i" name="init_status"/>
+			<arg direction="out" type="b" name="b_fdn"/>
+			<arg direction="out" type="b" name="b_adn"/>
+			<arg direction="out" type="b" name="b_sdn"/>
+			<arg direction="out" type="b" name="b_usim"/>
+			<arg direction="out" type="b" name="b_aas"/>
+			<arg direction="out" type="b" name="b_gas"/>
+		</method>
+
+		<method name="GetCount">
+			<arg direction="in" type="i" name="req_type"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="resp_type"/>
+			<arg direction="out" type="i" name="used"/>
+			<arg direction="out" type="i" name="total"/>
+		</method>
+
+		<method name="GetInfo">
+			<arg direction="in" type="i" name="req_type"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="resp_type"/>
+			<arg direction="out" type="i" name="index_min"/>
+			<arg direction="out" type="i" name="index_max"/>
+			<arg direction="out" type="i" name="number_length_max"/>
+			<arg direction="out" type="i" name="text_length_max"/>
+		</method>
+
+		<method name="GetUsimMetaInfo">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="aa{sv}" name="list"/>
+		</method>
+
+		<method name="ReadRecord">
+			<arg direction="in" type="i" name="req_type"/>
+			<arg direction="in" type="i" name="index"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="resp_type"/>
+			<arg direction="out" type="i" name="index"/>
+			<arg direction="out" type="i" name="next_index"/>
+			<arg direction="out" type="s" name="name"/>
+			<arg direction="out" type="i" name="dcs"/>
+			<arg direction="out" type="s" name="number"/>
+			<arg direction="out" type="i" name="ton"/>
+			<arg direction="out" type="s" name="sne"/>
+			<arg direction="out" type="i" name="sne_dcs"/>
+			<arg direction="out" type="s" name="number2"/>
+			<arg direction="out" type="i" name="number2_ton"/>
+			<arg direction="out" type="s" name="number3"/>
+			<arg direction="out" type="i" name="number3_ton"/>
+			<arg direction="out" type="s" name="number4"/>
+			<arg direction="out" type="i" name="number4_ton"/>
+			<arg direction="out" type="s" name="email1"/>
+			<arg direction="out" type="s" name="email2"/>
+			<arg direction="out" type="s" name="email3"/>
+			<arg direction="out" type="s" name="email4"/>
+			<arg direction="out" type="i" name="group_index"/>
+		</method>
+
+		<method name="UpdateRecord">
+			<arg direction="in" type="i" name="type"/>
+			<arg direction="in" type="i" name="index"/>
+			<arg direction="in" type="s" name="name"/>
+			<arg direction="in" type="i" name="dcs"/>
+			<arg direction="in" type="s" name="number"/>
+			<arg direction="in" type="i" name="ton"/>
+			<arg direction="in" type="s" name="sne"/>
+			<arg direction="in" type="i" name="sne_dcs"/>
+			<arg direction="in" type="s" name="number2"/>
+			<arg direction="in" type="i" name="number2_ton"/>
+			<arg direction="in" type="s" name="number3"/>
+			<arg direction="in" type="i" name="number3_ton"/>
+			<arg direction="in" type="s" name="number4"/>
+			<arg direction="in" type="i" name="number4_ton"/>
+			<arg direction="in" type="s" name="email1"/>
+			<arg direction="in" type="s" name="email2"/>
+			<arg direction="in" type="s" name="email3"/>
+			<arg direction="in" type="s" name="email4"/>
+			<arg direction="in" type="i" name="group_index"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="DeleteRecord">
+			<arg direction="in" type="i" name="type"/>
+			<arg direction="in" type="i" name="index"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<signal name="Status">
+			<arg type="i" name="status"/>
+		</signal>
+
+	</interface>
+
+</node>

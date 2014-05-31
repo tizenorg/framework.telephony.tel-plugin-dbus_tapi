@@ -1,0 +1,167 @@
+tel-plugin-dbus-tapi (0.1.20) unstable; urgency=low
+
+  * Replace dun pin ctrl from ps to modem
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.20
+
+ -- DongHoo Park <donghoo.park@samsung.com>  Mon, 11 Jun 2012 15:00:33 +0900
+
+tel-plugin-dbus-tapi (0.1.19) unstable; urgency=low
+
+  * Fix OBS Build error
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.19
+
+ -- Youngman Park <youngman.park@samsung.com>  Fri, 25 May 2012 14:10:57 +0900
+
+tel-plugin-dbus-tapi (0.1.18) unstable; urgency=low
+
+  * Add new feature for Call & Factory and phonebook select handling
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.18
+
+ -- Youngman Park <youngman.park@samsung.com>  Mon, 21 May 2012 18:00:57 +0900
+
+tel-plugin-dbus-tapi (0.1.17) unstable; urgency=low
+
+  * Add lock info feature and so on
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.17
+
+ -- Kyeongchul Kim <kyeongchul.kim@samsung.com>  Thu, 17 May 2012 17:39:57 +0900
+
+tel-plugin-dbus-tapi (0.1.16) unstable; urgency=low
+
+  * Fix OBS Build Error
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.16
+
+ -- Youngman Park <youngman.park@samsung.com>  Wed, 09 Apr 2012 14:50:05 +0900
+
+tel-plugin-dbus-tapi (0.1.15) unstable; urgency=low
+
+  * Add Call New API ( call custom service )
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.15
+
+ -- Youngman Park <youngman.park@samsung.com>  Mon, 07 Apr 2012 16:13:05 +0900
+
+tel-plugin-dbus-tapi (0.1.14) unstable; urgency=low
+
+  * Fix build error
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.14
+
+ -- Inho Oh <inho48.oh@samsung.com>  Fri, 27 Apr 2012 13:43:05 +0900
+
+tel-plugin-dbus-tapi (0.1.13) unstable; urgency=low
+
+  * Add sat en/decoding functions
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.13
+
+ -- Kyeongchul Kim <kyeongchul.kim@samsung.com>  Tue, 17 Apr 2012 23:35:39 +0900
+
+tel-plugin-dbus-tapi (0.1.12) unstable; urgency=low
+
+  * fixed lock status update in dbus custom data
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.12
+
+ -- Kyeongchul Kim <kyeongchul.kim@samsung.com>  Mon, 09 Apr 2012 22:08:42 +0900
+
+tel-plugin-dbus-tapi (0.1.11) unstable; urgency=low
+
+  * version up for code sync with public binary
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.11
+
+ -- Kyeongchul Kim <kyeongchul.kim@samsung.com>  Mon, 02 Apr 2012 12:20:05 +0900
+
+tel-plugin-dbus-tapi (0.1.10) unstable; urgency=low
+
+  * Fix prefix (TAPI_ to TCORE_)
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.10
+
+ -- Inho Oh <inho48.oh@samsung.com>  Tue, 27 Mar 2012 22:13:53 +0900
+
+tel-plugin-dbus-tapi (0.1.9) unstable; urgency=low
+
+  * Fixed capi-sim TC issue and apply SAT handling code
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.9
+
+ -- Kyeongchul Kim <kyeongchul.kim@samsung.com>  Tue, 27 Mar 2012 17:19:22 +0900
+
+tel-plugin-dbus-tapi (0.1.8) unstable; urgency=low
+
+  * Fixed emulator call issue
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.8
+
+ -- Inho Oh <inho48.oh@samsung.com>  Thu, 22 Mar 2012 17:38:20 +0900
+
+tel-plugin-dbus-tapi (0.1.7) unstable; urgency=low
+
+  * Fix obs build break
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.7
+
+ -- DongHoo Park <donghoo.park@samsung.com>  Wed, 21 Mar 2012 14:54:30 +0900
+
+tel-plugin-dbus-tapi (0.1.6) unstable; urgency=low
+
+  * Version up
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.6
+
+ -- DongHoo Park <donghoo.park@samsung.com>  Wed, 21 Mar 2012 14:11:37 +0900
+
+tel-plugin-dbus-tapi (0.1.5) unstable; urgency=low
+
+  * Remove legacy header files and update phonebook code
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.5
+
+ -- Kyeongchul Kim <kyeongchul.kim@samsung.com>  Mon, 19 Mar 2012 22:59:27 +0900
+
+tel-plugin-dbus-tapi (0.1.4) unstable; urgency=low
+
+  * Fix network selection mode get value mismatch bug
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.4
+
+ -- Inho Oh <inho48.oh@samsung.com>  Mon, 19 Mar 2012 14:13:18 +0900
+
+tel-plugin-dbus-tapi (0.1.3) unstable; urgency=low
+
+  * Add code for CF, CB, CW
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.3
+
+ -- Youngman Park <youngman.park@samsung.com>  Sat, 17 Mar 2012 18:50:25 +0900
+
+tel-plugin-dbus-tapi (0.1.2) unstable; urgency=low
+
+  * Add code for Video Call
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.2
+
+ -- Youngman Park <youngman.park@samsung.com>  Sat, 17 Mar 2012 18:20:25 +0900
+
+tel-plugin-dbus-tapi (0.1.1) unstable; urgency=low
+
+  * Fix version mismatch
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.1
+
+ -- Inho Oh <inho48.oh@samsung.com>  Fri, 16 Mar 2012 00:45:25 +0900
+
+tel-plugin-dbus-tapi (0.1.0) unstable; urgency=low
+
+  * Initial
+  * Git: slp/pkgs/t/tel-plugin-dbus_tapi
+  * Tag: tel-plugin-dbus-tapi_0.1.0
+
+ -- Inho Oh <inho48.oh@samsung.com>  Thu, 15 Mar 2012 23:40:55 +0900

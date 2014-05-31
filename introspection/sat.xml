@@ -1,0 +1,265 @@
+<node>
+	<!--
+		org.tizen.telephony.SAT:
+		@short_description: Tizen Telephony SIM Application Toolkit interface
+
+		SAT interface.
+
+	-->
+	<interface name="org.tizen.telephony.SAT">
+	
+		<method name="GetMainMenuInfo">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="command_id"/>
+			<arg direction="out" type="b" name="menu_present"/>
+			<arg direction="out" type="s" name="main_title"/>
+			<arg direction="out" type="v" name="menu_item"/>
+			<arg direction="out" type="i" name="menu_count"/>
+			<arg direction="out" type="b" name="menu_help_info"/>
+			<arg direction="out" type="b" name="menu_updated"/>
+		</method>
+						
+		<method name="SendUiDisplayStatus">
+			<arg direction="in" type="i" name="command_id"/>
+			<arg direction="in" type="b" name="display_status"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+		
+		<method name="SendUserConfirm">
+			<arg direction="in" type="i" name="command_id"/>
+			<arg direction="in" type="i" name="command_type"/>
+			<arg direction="in" type="i" name="user_confirm_type"/>
+			<arg direction="in" type="v" name="additional_data"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>		
+				
+		<method name="SelectMenu">
+			<arg direction="in" type="i" name="item_identifier"/>
+			<arg direction="in" type="b" name="help_request"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="envelop_rsp"/>
+		</method>
+		
+		<method name="DownloadEvent">
+			<arg direction="in" type="i" name="event_download_type"/>
+			<arg direction="in" type="i" name="src_device"/>
+			<arg direction="in" type="i" name="dest_device"/>
+			<arg direction="in" type="v" name="download_data"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="envelop_rsp"/>
+		</method>
+
+		<method name="SendAppExecResult">
+			<arg direction="in" type="i" name="command_id"/>
+			<arg direction="in" type="i" name="command_type"/>
+			<arg direction="in" type="v" name="exec_result"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<signal name="SetupMenu">
+			<arg type="i" name="command_id"/>
+			<arg type="b" name="menu_present"/>
+			<arg type="s" name="main_title"/>
+			<arg type="v" name="menu_item"/>
+			<arg type="i" name="menu_count"/>
+			<arg type="b" name="menu_help_info"/>
+			<arg type="b" name="menu_updated"/>
+		</signal>
+		
+		<signal name="DisplayText">
+			<arg type="i" name="command_id"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="text_len"/>
+			<arg type="i" name="duration"/>
+			<arg type="b" name="priority_high"/>
+			<arg type="b" name="user_rsp_required"/>
+			<arg type="b" name="immediately_rsp"/>
+		</signal>
+		
+		<signal name="SelectItem">
+			<arg type="i" name="command_id"/>
+			<arg type="b" name="help_info"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="text_len"/>
+			<arg type="i" name="default_item_index"/>
+			<arg type="i" name="menu_count"/>
+			<arg type="v" name="menu_item"/>
+		</signal>
+		
+		<signal name="GetInkey">
+			<arg type="i" name="command_id"/>
+			<arg type="i" name="key_type"/>
+			<arg type="i" name="input_alphabet_type"/>
+			<arg type="b" name="numeric"/>
+			<arg type="b" name="help_info"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="text_len"/>
+			<arg type="i" name="duration"/>
+		</signal>
+		
+		<signal name="GetInput">
+			<arg type="i" name="command_id"/>
+			<arg type="i" name="input_alphabet_type"/>
+			<arg type="b" name="numeric"/>
+			<arg type="b" name="help_info"/>
+			<arg type="b" name="echo_input"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="text_len"/>
+			<arg type="i" name="response_len_max"/>
+			<arg type="i" name="response_len_min"/>
+			<arg type="s" name="default_text"/>
+			<arg type="i" name="default_text_len"/>
+		</signal>
+		
+		<signal name="PlayTone">
+			<arg type="i" name="command_id"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="text_len"/>
+			<arg type="i" name="tone_type"/>
+			<arg type="i" name="duration"/>
+		</signal>
+				
+		<signal name="SendSMS">
+			<arg type="i" name="command_id"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="text_len"/>
+			<arg type="b" name="packing_required"/>
+			<arg type="i" name="ton"/>
+			<arg type="i" name="npi"/>
+			<arg type="s" name="dialling_number"/>
+			<arg type="i" name="number_len"/>
+			<arg type="i" name="tpdu_type"/>
+			<arg type="v" name="tpdu_data"/>
+			<arg type="i" name="tpdu_data_len"/>
+		</signal>
+		
+		<signal name="SendSS">
+			<arg type="i" name="command_id"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="text_len"/>
+			<arg type="i" name="ton"/>
+			<arg type="i" name="npi"/>
+			<arg type="s" name="ss_string"/>
+		</signal>
+
+		<signal name="SetupUSSD">
+			<arg type="i" name="command_id"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="text_len"/>
+			<arg type="s" name="ussd_string"/>
+		</signal>
+
+		<signal name="SetupCall">
+			<arg type="i" name="command_id"/>
+			<arg type="s" name="confirm_text"/>
+			<arg type="i" name="confirm_text_len"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="text_len"/>
+			<arg type="i" name="call_type"/>
+			<arg type="s" name="call_number"/>
+			<arg type="i" name="duration"/>
+		</signal>
+		
+		<signal name="SetupEventList">
+			<arg type="i" name="event_cnt"/>
+			<arg type="v" name="evt_list"/>
+		</signal>
+
+		<signal name="SetupIdleModeText">
+			<arg type="i" name="command_id"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="text_len"/>
+		</signal>
+				
+		<signal name="OpenChannel">
+			<arg type="i" name="command_id"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="text_len"/>
+			<arg type="b" name="immediate_link"/>
+			<arg type="b" name="auto_reconnection"/>
+			<arg type="b" name="bg_mode"/>
+			<arg type="i" name="bearer_type"/>
+			<arg type="v" name="bearer_param"/>
+			<arg type="i" name="buffer_size"/>
+			<arg type="i" name="protocol_type"/>
+			<arg type="i" name="port_number"/>
+			<arg type="i" name="data_dest_address_type"/>
+			<arg type="s" name="data_dest_address"/>
+			<arg type="v" name="bearer_detail"/>
+		</signal>
+
+		<signal name="CloseChannel">
+			<arg type="i" name="command_id"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="text_len"/>
+			<arg type="i" name="channel_id"/>
+		</signal>
+				
+		<signal name="ReceiveData">
+			<arg type="i" name="command_id"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="text_len"/>
+			<arg type="i" name="channel_id"/>
+			<arg type="i" name="data_len"/>
+		</signal>
+
+		<signal name="SendData">
+			<arg type="i" name="command_id"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="text_len"/>
+			<arg type="i" name="channel_id"/>
+			<arg type="b" name="send_data_immediately"/>
+			<arg type="v" name="channel_data"/>
+			<arg type="i" name="channel_data_len"/>
+		</signal>
+
+		<signal name="GetChannelStatus">
+			<arg type="i" name="command_id"/>
+		</signal>
+
+		<signal name="Refresh">
+			<arg type="i" name="command_id"/>
+			<arg type="i" name="refresh_type"/>
+			<arg type="v" name="file_list"/>
+		</signal>
+		
+		<signal name="MoreTime">
+		</signal>
+		
+		<signal name="SendDtmf">
+			<arg type="i" name="command_id"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="text_len"/>
+			<arg type="s" name="dtmf_str"/>
+			<arg type="i" name="dtmf_str_len"/>
+		</signal>
+		
+		<signal name="LaunchBrowser">
+			<arg type="i" name="command_id"/>
+			<arg type="i" name="launch_type"/>
+			<arg type="i" name="browser_id"/>
+			<arg type="s" name="url"/>
+			<arg type="i" name="url_len"/>
+			<arg type="s" name="gateway_proxy"/>
+			<arg type="i" name="gateway_proxy_len"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="text_len"/>
+		</signal>
+		
+		<signal name="ProvideLocalInfo">
+			<arg type="i" name="info_type"/>
+		</signal>
+		
+		<signal name="LanguageNotification">
+			<arg type="i" name="command_id"/>
+			<arg type="i" name="language"/>
+			<arg type="b" name="b_specified"/>
+		</signal>
+
+		<signal name="EndProactiveSession">
+			<arg type="i" name="command_type"/>
+		</signal>
+		
+	</interface>
+	
+</node>

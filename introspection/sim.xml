@@ -1,0 +1,238 @@
+<node>
+
+	<interface name="org.tizen.telephony.Sim">
+		<method name="GetInitStatus">
+			<arg direction="out" type="i" name="init_status"/>
+			<arg direction="out" type="b" name="sim_changed"/>
+		</method>
+
+		<method name="GetCardType">
+			<arg direction="out" type="i" name="card_type"/>
+		</method>
+
+		<method name="GetIMSI">
+			<arg direction="out" type="s" name="plmn"/>
+			<arg direction="out" type="s" name="msin"/>
+		</method>		
+		
+		<method name="GetECC">
+			<arg direction="out" type="aa{sv}" name="ecc_list"/>
+		<!-- dict
+		     "name"	STRING (emergency call code alpha id)
+		     "number" STRING (emergency call code)
+		     "category" STRING "police"/"ambulance"/"firebrigade"/"maraineguard"/"mountainrescue"
+		-->
+		</method>
+
+		<method name="GetICCID">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="s" name="iccid"/>
+		</method>
+
+		<method name="GetLanguage">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="language"/>
+		</method>
+
+		<method name="SetLanguage">
+			<arg direction="in" type="i" name="language"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="GetCallForwarding">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="b" name="cphs"/>
+			<arg direction="out" type="aa{sv}" name="cf"/>
+			<arg direction="out" type="a{sv}" name="cphs_cf"/>
+		</method>
+
+		<method name="SetCallForwarding">
+			<arg direction="in" type="b" name="cphs"/>
+			<arg direction="in" type="i" name="rec_index"/>
+			<arg direction="in" type="i" name="msp_num"/>
+			<arg direction="in" type="y" name="cfu_status"/>
+			<arg direction="in" type="i" name="ton"/>
+			<arg direction="in" type="i" name="npi"/>
+			<arg direction="in" type="s" name="number"/>
+			<arg direction="in" type="i" name="cc2_id"/>
+			<arg direction="in" type="i" name="ext7_id"/>
+			<arg direction="in" type="b" name="cphs_line1"/>
+			<arg direction="in" type="b" name="cphs_line2"/>
+			<arg direction="in" type="b" name="cphs_fax"/>
+			<arg direction="in" type="b" name="cphs_data"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="GetMessageWaiting">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="b" name="cphs"/>
+			<arg direction="out" type="aa{sv}" name="mw"/>
+			<arg direction="out" type="a{sv}" name="cphs_mw"/>
+		</method>
+
+		<method name="SetMessageWaiting">
+			<arg direction="in" type="b" name="cphs"/>
+			<arg direction="in" type="i" name="rec_index"/>
+			<arg direction="in" type="y" name="indicator_status"/>
+			<arg direction="in" type="i" name="voice_cnt"/>
+			<arg direction="in" type="i" name="fax_cnt"/>
+			<arg direction="in" type="i" name="email_cnt"/>
+			<arg direction="in" type="i" name="other_cnt"/>
+			<arg direction="in" type="i" name="video_cnt"/>
+			<arg direction="in" type="b" name="cphs_voice1"/>
+			<arg direction="in" type="b" name="cphs_voice2"/>
+			<arg direction="in" type="b" name="cphs_fax"/>
+			<arg direction="in" type="b" name="cphs_data"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="GetMailbox">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="b" name="cphs"/>
+			<arg direction="out" type="aa{sv}" name="list"/>
+		</method>
+
+		<method name="SetMailbox">
+			<arg direction="in" type="b" name="cphs"/>
+			<arg direction="in" type="i" name="type"/>
+			<arg direction="in" type="i" name="rec_index"/>
+			<arg direction="in" type="i" name="profile_number"/>
+			<arg direction="in" type="i" name="alpha_id_max_len"/>
+			<arg direction="in" type="s" name="alpha_id"/>
+			<arg direction="in" type="i" name="ton"/>
+			<arg direction="in" type="i" name="npi"/>
+			<arg direction="in" type="s" name="number"/>
+			<arg direction="in" type="i" name="cc_id"/>
+			<arg direction="in" type="i" name="ext1_id"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="GetCPHSInfo">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="phase"/>
+			<arg direction="out" type="b" name="ons_short"/>
+			<arg direction="out" type="b" name="mailbox_number"/>
+			<arg direction="out" type="b" name="sst"/>
+			<arg direction="out" type="b" name="csp"/>
+			<arg direction="out" type="b" name="info_number"/>
+		</method>
+
+		<method name="GetMSISDN">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="aa{sv}" name="list"/>
+		<!-- dict
+		     "name" STRING (MSISDN alpha id)
+		     "number" STRING (MSISDN number)
+		-->
+		</method>
+
+		<method name="GetOplmnwact">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="aa{sv}" name="list"/>
+		<!-- dict
+		     "plmn" STRING
+		     "b_umts" BOOLEAN TRUE/FALSE 
+		     "b_gsm" BOOLEAN TRUE/FALSE
+		-->
+		</method>
+
+		<method name="GetSpn">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="y" name="display_condition"/>
+			<arg direction="out" type="s" name="spn"/>
+		</method>		
+
+		<method name="GetCphsNetName">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="s" name="full_name"/>
+			<arg direction="out" type="s" name="short_name"/>
+		</method>
+
+		<method name="Authentication">
+			<arg direction="in" type="i" name="type"/>
+			<arg direction="in" type="v" name="rand"/>
+			<arg direction="in" type="v" name="autn"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="resp_type"/>
+			<arg direction="out" type="i" name="auth_result"/>
+			<arg direction="out" type="v" name="authentication_key"/>
+			<arg direction="out" type="v" name="cipher_data"/>
+			<arg direction="out" type="v" name="integrity_data"/>
+			<arg direction="out" type="v" name="resp_data"/>
+		</method>
+
+		<method name="VerifySec">
+			<arg direction="in" type="i" name="type"/>
+			<arg direction="in" type="s" name="password"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="resp_type"/>
+			<arg direction="out" type="i" name="retry_count"/>
+		</method>
+
+		<method name="VerifyPUK">
+			<arg direction="in" type="i" name="type"/>
+			<arg direction="in" type="s" name="puk"/>
+			<arg direction="in" type="s" name="new_pin"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="resp_type"/>
+			<arg direction="out" type="i" name="retry_count"/>
+		</method>
+
+		<method name="ChangePIN">
+			<arg direction="in" type="i" name="type"/>
+			<arg direction="in" type="s" name="old_password"/>
+			<arg direction="in" type="s" name="new_password"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="resp_type"/>
+			<arg direction="out" type="i" name="retry_count"/>
+		</method>
+
+		<method name="DisableFacility">
+			<arg direction="in" type="i" name="type"/>
+			<arg direction="in" type="s" name="password"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="resp_type"/>
+			<arg direction="out" type="i" name="retry_count"/>
+		</method>
+
+		<method name="EnableFacility">
+			<arg direction="in" type="i" name="type"/>
+			<arg direction="in" type="s" name="password"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="resp_type"/>
+			<arg direction="out" type="i" name="retry_count"/>
+		</method>
+
+		<method name="GetFacility">
+			<arg direction="in" type="i" name="type"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="resp_type"/>
+			<arg direction="out" type="i" name="status"/>
+		</method>
+
+		<method name="GetLockInfo">
+			<arg direction="in" type="i" name="type"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="resp_type"/>
+			<arg direction="out" type="i" name="status"/>
+			<arg direction="out" type="i" name="retry_count"/>
+		</method>
+
+		<method name="TransferAPDU">
+			<arg direction="in" type="v" name="apdu"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="v" name="resp_apdu"/>
+		</method>
+
+		<method name="GetATR">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="v" name="atr"/>
+		</method>
+
+		<signal name="Status">
+			<arg type="i" name="status"/>
+		</signal>
+
+	</interface>
+
+</node>

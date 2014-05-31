@@ -1,0 +1,326 @@
+<node>
+	<!--
+		org.tizen.telephony.Network:
+		@short_description: Tizen Telephony Network interface
+
+		Network interface.
+
+	-->
+	<interface name="org.tizen.telephony.Network">
+		<!--
+			Search:
+			@result: Success(0)
+			@list: An array of dict with network information. <para>dict key/value:</para><variablelist><varlistentry><term><literal>"plmn"</literal></term><listitem><type>string</type></listitem></varlistentry><varlistentry><term><literal>"act"</literal></term><listitem><type>int</type></listitem></varlistentry><varlistentry><term><literal>"type"</literal></term><listitem><type>int</type> Unknown(0), Home Plmn(1), Available Plmn(2), Forbidden Plmn(3)</listitem></varlistentry><varlistentry><term><literal>"name"</literal></term><listitem><type>string</type></listitem></varlistentry></variablelist>
+
+			Request to do manual network selection to search for the available networks and provide the network list
+
+		-->
+		<method name="Search">
+			<arg direction="out" type="aa{sv}" name="list"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			SearchCancel:
+			@result: Success(0)
+
+			Cancle the org.tizen.telephony.Network.Search() request.
+		-->
+		<method name="SearchCancel">
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			SetSelectionMode:
+			@mode: Selection mode. Automatic(0), Manual(1)
+			@plmn: Plmn string.
+			@act: Access technology. GSM(1), GPRS(2), EGPRS(3), UMTS(4), IS95A(17), IS95B(18), EHRPD(25), LTE(33)
+			@result: Success(0)
+
+			Set network selection mode
+		-->
+		<method name="SetSelectionMode">
+			<arg direction="in" type="i" name="mode"/>
+			<arg direction="in" type="s" name="plmn"/>
+			<arg direction="in" type="i" name="act"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			GetSelectionMode:
+			@mode: Selection mode. Manual(0), Automatic(1)
+			@result: Success(0)
+
+			Get network selection mode
+		-->
+		<method name="GetSelectionMode">
+			<arg direction="out" type="i" name="mode"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			SetServiceDomain:
+			@domain: Service domain. Combined(1), Circuit Service(2), Packet Service(3)
+			@result: Success(0)
+
+			Set network service domain
+		-->
+		<method name="SetServiceDomain">
+			<arg direction="in" type="i" name="domain"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			GetServiceDomain:
+			@domain: Service domain. Combined(1), Circuit Service(2), Packet Service(3)
+			@result: Success(0)
+
+			Get network service domain
+		-->
+		<method name="GetServiceDomain">
+			<arg direction="out" type="i" name="domain"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			SetBand:
+			@band: Network band. ANY(0), GSM850(1), GSM900_1800(2), GSM1900(3), GSM(4), WCDMA(5), WCDMA850(6), WCDMA1900(7), WCDMA2100(8), GSM900(9), GSM1800(10), GSM850_1900(11)
+			@mode: Mode. Preferred(1), Only(2)
+			@result: Success(0)
+
+			Set network band
+		-->
+		<method name="SetBand">
+			<arg direction="in" type="i" name="band"/>
+			<arg direction="in" type="i" name="mode"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			GetBand:
+			@band: Network band. ANY(0), GSM850(1), GSM900_1800(2), GSM1900(3), GSM(4), WCDMA(5), WCDMA850(6), WCDMA1900(7), WCDMA2100(8), GSM900(9), GSM1800(10), GSM850_1900(11)
+			@mode: Mode. Preferred(1), Only(2)
+			@result: Success(0)
+
+			Get network band
+		-->
+		<method name="GetBand">
+			<arg direction="out" type="i" name="band"/>
+			<arg direction="out" type="i" name="mode"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			SetMode:
+			@mode: Mode. Auto(0x0), GSM(0x1), WCDMA(0x2), CDMA(0x4), LTE(0x8)
+			@result: Success(0)
+
+			Set network mode
+		-->
+		<method name="SetMode">
+			<arg direction="in" type="i" name="mode"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			GetMode:
+			@mode: Mode. Auto(0x0), GSM(0x1), WCDMA(0x2), CDMA(0x4), LTE(0x8)
+			@result: Success(0)
+
+			Get network mode
+		-->
+		<method name="GetMode">
+			<arg direction="out" type="i" name="mode"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			SetPreferredPlmn:
+			@mode: add(1), edit(2), delete(3)
+			@index: Operator index in the EFplmnsel of the SIM
+			@act: Access technology. GSM(1), GPRS(2), EGPRS(3), UMTS(4), IS95A(17), IS95B(18), EHRPD(25), LTE(33)
+			@plmn: Plmn
+			@result: Success(0)
+
+			Set Preferred Plmn
+		-->
+		<method name="SetPreferredPlmn">
+			<arg direction="in" type="i" name="mode"/>
+			<arg direction="in" type="i" name="index"/>
+			<arg direction="in" type="i" name="act"/>
+			<arg direction="in" type="s" name="plmn"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			GetPreferredPlmn:
+			@list: A set of key/dict paris with preferred plmn list. <para>dict items are:</para><itemizedlist><listitem>"plmn" <type>string</type></listitem><listitem>"act" <type>int</type></listitem><listitem>"index" <type>int</type></listitem></itemizedlist>
+			@result: Success(0)
+
+			Get Preferred Plmn list
+		-->
+		<method name="GetPreferredPlmn">
+			<arg direction="out" type="aa{sv}" name="list"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			GetServingNetwork:
+			@act: Access technology. GSM(1), GPRS(2), EGPRS(3), UMTS(4), IS95A(17), IS95B(18), EHRPD(25), LTE(33)
+			@plmn: Plmn string.
+			@status: Registration status. NOT REGISTER(1), REGISTER HOME(2), SEARCHING(3), DENIED(4), UNKNOWN(5), REGISTER ROAM(6)
+			@lac: Location Area Code.
+			@result: Success(0)
+
+			Set power on attach configuration
+		-->
+		<method name="GetServingNetwork">
+			<arg direction="out" type="i" name="act"/>
+			<!-- arg direction="out" type="i" name="status" -->
+			<arg direction="out" type="s" name="plmn"/>
+			<arg direction="out" type="i" name="lac"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="GetNgbrCellInfo">
+			<arg direction="out" type="aa{sv}" name="info"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			RegistrationStatus:
+			@circuit: Circuit service status.
+			@packet: Packet service status.
+			@type: Service type. UNKNOWN(0), NO SERVICE(1), EMERGENCY(2), SEARCH(3), 2G(4), 2.5G(5), 2.5G EDGE(6), 3G(7)
+			@roaming: Roaming status.
+
+			Network registration status.
+		-->
+		<signal name="RegistrationStatus">
+			<arg type="i" name="circuit"/>
+			<arg type="i" name="packet"/>
+			<arg type="i" name="type"/>
+			<arg type="b" name="roaming"/>
+		</signal>
+
+		<!--
+			Info:
+			@rssi: Radio Signal Strength infomation. (0 ~ 6)
+			@battery: Battery information. (0 ~ 5)
+
+			RSSI and Battery information.
+		-->
+		<signal name="Info">
+			<arg type="i" name="rssi"/>
+			<arg type="i" name="battery"/>
+		</signal>
+
+		<!--
+			Change:
+			@act: Access technology. GSM(1), GPRS(2), EGPRS(3), UMTS(4), IS95A(17), IS95B(18), EHRPD(25), LTE(33)
+			@plmn: Plmn string.
+			@lac: Location Area Code.
+
+			Network change.
+		-->
+		<signal name="Change">
+			<arg type="i" name="act"/>
+			<arg type="s" name="plmn"/>
+			<arg type="i" name="lac"/>
+		</signal>
+
+		<!--
+			TimeInfo:
+			@year: Year. (year - 2000). e.g. 2012 is 12
+			@month: Month. (1 ~ 12)
+			@day: Day (1 ~ 31)
+			@hour: Hour (0 ~ 23)
+			@minute: Minute (0 ~ 59)
+			@second: Second (0 ~ 59)
+			@wday: Day of week (0:Sunday ~ 6:Saturday)
+			@gmtoff: GMT Offset (minutes). e.g. GMT+9 is 540
+			@dstoff: Daylight adjust time. (hours)
+			@isdst: Daylight flag
+			@plmn: Plmn
+
+			Network time information.
+		-->
+		<signal name="TimeInfo">
+			<arg type="i" name="year"/>
+			<arg type="i" name="month"/>
+			<arg type="i" name="day"/>
+			<arg type="i" name="hour"/>
+			<arg type="i" name="minute"/>
+			<arg type="i" name="second"/>
+			<arg type="i" name="wday"/>
+			<arg type="i" name="gmtoff"/>
+			<arg type="i" name="dstoff"/>
+			<arg type="b" name="isdst"/>
+			<arg type="s" name="plmn"/>
+		</signal>
+
+		<!--
+			Identity:
+			@plmn: Plmn string.
+			@short_name: Network name (short - 16 bytes)
+			@full_name: Network name (full - 32 bytes)
+
+			Network identity information.
+		-->
+		<signal name="Identity">
+			<arg type="s" name="plmn"/>
+			<arg type="s" name="short_name"/>
+			<arg type="s" name="full_name"/>
+		</signal>
+
+		<!--
+			CellInfo:
+			@lac: Location Area Code.
+			@cell_id: Cell ID
+
+			Network location and cell information.
+		-->
+		<signal name="CellInfo">
+			<arg type="i" name="lac"/>
+			<arg type="i" name="cell_id"/>
+		</signal>
+
+		<!-- rssi: 0 ~ 5 -->
+		<property name="rssi" type="i" access="read"/>
+
+		<!-- lac: Location Area Code -->
+		<property name="lac" type="i" access="read"/>
+
+		<!-- plmn: PLMN -->
+		<property name="plmn" type="s" access="read"/>
+
+		<!-- cell_id: Cell ID -->
+		<property name="cell_id" type="i" access="read"/>
+
+		<!-- network_name: Network Name -->
+		<property name="network_name" type="s" access="read"/>
+
+		<!-- service_type: Service Type -->
+		<property name="service_type" type="i" access="read"/>
+
+		<!-- network_type: Network Type (0=NONE, 1=HSDPA, 2=HSUPA, 3=HSPA) -->
+		<property name="network_type" type="i" access="read"/>
+
+		<!-- circuit_status: Circuit domain status -->
+		<property name="circuit_status" type="i" access="read"/>
+
+		<!-- packet_status: Packet domain status -->
+		<property name="packet_status" type="i" access="read"/>
+
+		<!-- roaming_status: Roaming status -->
+		<property name="roaming_status" type="b" access="read"/>
+
+		<!-- name_priority: Network name, SPN name display priority -->
+		<property name="name_priority" type="i" access="read"/>
+
+		<!-- spn_name: SPN name -->
+		<property name="spn_name" type="s" access="read"/>
+
+	</interface>
+
+</node>

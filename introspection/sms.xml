@@ -1,0 +1,416 @@
+<node>
+	<!--
+		org.tizen.telephony.sms:
+		@short_description: Tizen Telephony SMS interface
+
+		SMS interface.
+
+	-->
+	<interface name="org.tizen.telephony.sms">
+		<!--
+			SendMsg:
+			@sca: Service Center Address
+			@tpdu_length: Size of the array which is actual TPDU message
+			@tpdu_data: SMS TPDU message
+			@moreMsg: MoreMsgToSend
+			@result: Success(0)
+
+			Sends an SMS message to the networ
+		-->
+		<method name="SendMsg">
+			<arg direction="in" type="s" name="sca"/>
+			<arg direction="in" type="i" name="tpdu_length"/>
+			<arg direction="in" type="s" name="tpdu_data"/>
+			<arg direction="in" type="i" name="moreMsg"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			ReadMsg:
+			@index: Index number of the message to be read
+			@result: Success(0)
+			@msg_status: Message status. READ(0),UNREAD(1) SENT(2), UNSENT(3), DELIVERED(4), DELIVERY_UNCONFIRMED(5), MESSAGE_REPLACED(6), RESERVED(7)
+			@sca: Service Center Address
+			@tpdu_length: Size of the array which is actual TPDU message
+			@tpdu_data: SMS TPDU message
+
+			Reads a message from SIM card storage.
+		-->
+		<method name="ReadMsg">
+			<arg direction="in" type="i" name="index"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="sim_index"/>
+			<arg direction="out" type="i" name="msg_status"/>
+			<arg direction="out" type="s" name="sca"/>
+			<arg direction="out" type="i" name="tpdu_length"/>
+			<arg direction="out" type="s" name="tpdu_data"/>
+		</method>
+
+		<!--
+			SaveMsg:
+			@msg_status: Message status. READ(0),UNREAD(1) SENT(2), UNSENT(3), DELIVERED(4), DELIVERY_UNCONFIRMED(5), MESSAGE_REPLACED(6), RESERVED(7)
+			@sca: Service Center Address
+			@tpdu_length: Size of the array which is actual TPDU message
+			@tpdu_data: SMS TPDU message
+			@result: Success(0)
+			@index: Index number of the message to be saved
+
+			Saves a message to SIM storage area.
+		-->
+		<method name="SaveMsg">
+			<arg direction="in" type="i" name="msg_status"/>
+			<arg direction="in" type="s" name="sca"/>
+			<arg direction="in" type="i" name="tpdu_length"/>
+			<arg direction="in" type="s" name="tpdu_data"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="index"/>
+		</method>
+
+		<!--
+			DeleteMsg:
+			@index: Message index to delete.
+			@result: Success(0)
+
+			Deletes a message specified by index (SIM index used when storing the SMS)
+		-->
+		<method name="DeleteMsg">
+			<arg direction="in" type="i" name="index"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="resp_index"/>
+		</method>
+
+		<!--
+			GetMsgCount:
+			@result: Success(0)
+			@totalCount: Total count of messages stored in SIM
+			@usedCount: Stored message count in SIM
+			@indexList: Message index list stored in SIM.
+
+			Retrieve message count information like Total record count, used record count and the indices list for SIM Storage.
+		-->
+		<method name="GetMsgCount">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="totalCount"/>
+			<arg direction="out" type="i" name="usedCount"/>
+			<arg direction="out" type="s" name="indexList"/>
+		</method>
+
+		<!--
+			GetSca:
+			@index: The record index of the Service center address information in the EF
+			@result: Success(0)
+			@ton: Type of number. UNKNOWN(0), INTERNATIONAL(1), NATIONAL(2), NETWORK_SPECIFIC(3), DEDICATED_ACCESS(4), ALPHA_NUMERIC(5), ABBREVIATED_NUMBER(6), RESERVED_FOR_EXT(7).
+			@npi: Numbering plan identification. UNKNOWN(0), ISDN_TEL(1), DATA_NUMBERING_PLAN(3), TELEX(4), SVC_CNTR_SPECIFIC_PLAN(5), SVC_CNTR_SPECIFIC_PLAN2(6), NATIONAL(8), PRIVATE(9), ERMES_NUMBERING_PLAN(10), RESERVED_FOR_EXT(0xF)
+			@dialNumberLength: length of address. If Service center address is not set, then this will be zero
+			@dialNumber: destination address. If Address not set, then set to 0xFF
+
+			Get current SMS Service Centre Address information.
+		-->
+		<method name="GetSca">
+			<arg direction="in" type="i" name="index"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="ton"/>
+			<arg direction="out" type="i" name="npi"/>
+			<arg direction="out" type="i" name="dialNumberLength"/>
+			<arg direction="out" type="s" name="dialNumber"/>
+		</method>
+
+		<!--
+			SetSca:
+			@index: The record index of the Service center address information in the EF.
+			@ton: Type of number. UNKNOWN(0), INTERNATIONAL(1), NATIONAL(2), NETWORK_SPECIFIC(3), DEDICATED_ACCESS(4), ALPHA_NUMERIC(5), ABBREVIATED_NUMBER(6), RESERVED_FOR_EXT(7).
+			@npi: Numbering plan identification. UNKNOWN(0), ISDN_TEL(1), DATA_NUMBERING_PLAN(3), TELEX(4), SVC_CNTR_SPECIFIC_PLAN(5), SVC_CNTR_SPECIFIC_PLAN2(6), NATIONAL(8), PRIVATE(9), ERMES_NUMBERING_PLAN(10), RESERVED_FOR_EXT(0xF)
+			@dialNumberLength: length of address. If Service center address is not set, then this will be zero
+			@dialNumber: destination address. If Address not set, then set to 0xFF
+			@result: Success(0)
+
+			Set SMS Service Centre Address information in order to send the SMS.
+		-->
+		<method name="SetSca">
+			<arg direction="in" type="i" name="index"/>
+			<arg direction="in" type="i" name="ton"/>
+			<arg direction="in" type="i" name="npi"/>
+			<arg direction="in" type="i" name="dialNumberLength"/>
+			<arg direction="in" type="s" name="dialNumber"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			GetCbConfig:
+			@result: Success(0)
+			@3gppType: Type of 3gpp, 0x01 . 3gpp. 0x02 . 3gpp2(CDMA)
+			@cbEnable: CB service state. If cb_enabled is true then cell broadcast service will be enabled 
+			@msgIdMaxCount: CB Channel List Max Count
+			@msgIdCount: CB message ID count
+			@msgId: CB message ID information
+
+			Retrieve SMS CB configuration options from EFcbmi file in the SIM.
+		-->
+		<method name="GetCbConfig">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="net3gppType"/>
+			<arg direction="out" type="i" name="cbEnable"/>
+			<arg direction="out" type="i" name="msgIdMaxCount"/>
+			<arg direction="out" type="i" name="msgIdRangeCount"/>
+			<arg direction="out" type="aa{sv}" name="msgId"/>
+		</method>
+
+		<!--
+			SetCbConfig:
+			@3gppType: Type of 3gpp, 0x01 . 3gpp. 0x02 . 3gpp2(CDMA)
+			@cbEnable: CB service state. If cb_enabled is true then cell broadcast service will be enabled
+			@msgIdMaxCount: CB Channel List Max Count
+			@msgIdCount: CB message ID count
+			@msgId: CB message ID information
+			@result: Success(0)
+
+			Set SMS CB Message Identifiers in the appropriate EF-CBMI/EF-CBMIR file in (U)SIM.
+		-->
+		<method name="SetCbConfig">
+			<arg direction="in" type="i" name="net3gppType"/>
+			<arg direction="in" type="i" name="cbEnable"/>
+			<arg direction="in" type="i" name="msgIdMaxCount"/>
+			<arg direction="in" type="i" name="msgIdRangeCount"/>
+			<arg direction="in" type="s" name="msgId"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			SetMemStatus:
+			@memoryStatus: the memory status type. PDA_MEMORY_AVAILABLE(1), PDA_MEMORY_FULL(2), PHONE_MEMORY_AVAILABLE(3), PHONE_MEMORY_FULL(4).
+			@result: Success(0)
+
+			This method is used by the applications to inform CP(modem) about the memory status of AP (whether FULL or AVAILABLE) so that modem can inform network.
+		-->
+		<method name="SetMemStatus">
+			<arg direction="in" type="i" name="memoryStatus"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			GetPrefBearer:
+			@result: Success(0)
+
+			Get SMS preferred bearer on which SMS has to be transmitted.
+		-->
+		<method name="GetPrefBearer">
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			SetPrefBearer:
+			@bearerType: the bearer type. PS_ONLY(1), CS_ONLY(2), PS_PREFERRED(3), CS_PREFERRED(4), NO_PREFERRED_BEARER(5)
+			@result: Success(0)
+
+		 	Set SMS preferred bearer on which SMS has to be transmitted.
+		-->
+		<method name="SetPrefBearer">
+			<arg direction="in" type="i" name="bearerType"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			SetDeliveryReport:
+			@sca: Service Centre address
+                        @tpdu_length: Size of the array which is actual TPDU message
+                        @tpdu_data: SMS TPDU message
+			@rpCause: Indicates the reason for SMS-DELIVER failure
+			@result: Success(0)
+
+			Send a delivery report for the received incoming SMS to the network.
+		-->
+		<method name="SetDeliveryReport">
+			<arg direction="in" type="s" name="sca"/>
+			<arg direction="in" type="i" name="tpdu_length"/>
+			<arg direction="in" type="s" name="tpdu_data"/>
+			<arg direction="in" type="i" name="rpCause"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			SetMsgStatus:
+			@index: Index of the message whose status has to be set.
+			@msgStatus: Message status. READ(0),UNREAD(1) SENT(2), UNSENT(3), DELIVERED(4), DELIVERY_UNCONFIRMED(5), MESSAGE_REPLACED(6), RESERVED(7)
+			@result: Success(0)
+
+			This /method is used by the applications to set the message status in the SIM EF.
+		-->
+		<method name="SetMsgStatus">
+			<arg direction="in" type="i" name="index"/>
+			<arg direction="in" type="i" name="msgStatus"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			GetSmsParams:
+			@index: SIM index where the SMS is stored
+			@result: Success(0)
+			@recordIndex: Index
+			@recordLen: SMS Parameter Record length
+			@alphaIdLen: Alpha id length
+			@alphaId: Alpha id. It is a unique identifier for each row/record in EFsmsp
+			@paramIndicator: SMS parameter indicator is a 1 byte value. Each bit in this value indicates the presence/absence of the sms header parameters.
+			@destAddr_DialNumLen: TP-DA(TP-destination address). length of address. If Service center address is not set, then this will be zero
+			@destAddr_Ton: TP-DA, Type of number
+			@destAddr_Npi: TP-DA, Numbering plan identification
+			@destAddr_DiallingNum: TP-DA, destination address. If Address not set, then set to 0xFF 
+			@svcCntrAddr_DialNumLen: TP-service center address. length of address
+			@SvcCntrAddr_Ton: TP-service center address. Type of number
+			@svcCntrAddr_Npi: TP-service center address. Numbering plan identification
+			@svcCntrAddr_DialNum: TP-service center address. destination address. If Address not set, then set to 0xFF
+			@protocolId: TP-protocol Id
+			@dataCodingScheme:  TP-data coding scheme
+			@validityPeriod: TP-validity period
+
+			Get the SMS parameters for a particular SMS (sent/received) based on the SIM index(EFsmsp) where it is stored.
+		-->
+		<method name="GetSmsParams">
+			<arg direction="in" type="i" name="index"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="recordIndex"/>
+			<arg direction="out" type="i" name="recordLen"/>
+			<arg direction="out" type="i" name="alphaIdLen"/>
+			<arg direction="out" type="s" name="alphaId"/>
+			<arg direction="out" type="i" name="paramIndicator"/>
+			<arg direction="out" type="i" name="destAddr_DialNumLen"/>
+			<arg direction="out" type="i" name="destAddr_Ton"/>
+			<arg direction="out" type="i" name="destAddr_Npi"/>
+			<arg direction="out" type="s" name="destAddr_DiallingNum"/>
+			<arg direction="out" type="i" name="svcCntrAddr_DialNumLen"/>
+			<arg direction="out" type="i" name="SvcCntrAddr_Ton"/>
+			<arg direction="out" type="i" name="svcCntrAddr_Npi"/>
+			<arg direction="out" type="s" name="svcCntrAddr_DialNum"/>
+			<arg direction="out" type="i" name="protocolId"/>
+			<arg direction="out" type="i" name="dataCodingScheme"/>
+			<arg direction="out" type="i" name="validityPeriod"/>
+		</method>
+
+		<!--
+			SetSmsParams:
+			@recordIndex: Index
+			@recordLen: SMS Parameter Record length
+			@alphaIdLen: Alpha id length
+			@alphaId: Alpha id. It is a unique identifier for each row/record in EFsmsp
+			@paramIndicator: SMS parameter indicator is a 1 byte value. Each bit in this value indicates the presence/absence of the sms header parameters.
+			@destAddr_DialNumLen: TP-DA(TP-destination address). length of address. If Service center address is not set, then this will be zero
+			@destAddr_Ton: TP-DA, Type of number
+			@destAddr_Npi: TP-DA, Numbering plan identification
+			@destAddr_DiallingNum: TP-DA, destination address. If Address not set, then set to 0xFF 
+			@svcCntrAddr_DialNumLen: TP-service center address. length of address
+			@SvcCntrAddr_Ton: TP-service center address. Type of number
+			@svcCntrAddr_Npi: TP-service center address. Numbering plan identification
+			@svcCntrAddr_DialNum: TP-service center address. destination address. If Address not set, then set to 0xFF
+			@protocolId: TP-protocol Id
+			@dataCodingScheme:  TP-data coding scheme
+			@validityPeriod: TP-validity period
+			@result: Success(0)
+
+			Set the short message service header parameters which are used in the origination of MO messages to EFsmsp
+		-->
+		<method name="SetSmsParams">
+			<arg direction="in" type="i" name="recordIndex"/>
+			<arg direction="in" type="i" name="recordLen"/>
+			<arg direction="in" type="i" name="alphaIdLen"/>
+			<arg direction="in" type="s" name="alphaId"/>
+			<arg direction="in" type="i" name="paramIndicator"/>
+			<arg direction="in" type="i" name="destAddr_DialNumLen"/>
+			<arg direction="in" type="i" name="destAddr_Ton"/>
+			<arg direction="in" type="i" name="destAddr_Npi"/>
+			<arg direction="in" type="s" name="destAddr_DiallingNum"/>
+			<arg direction="in" type="i" name="svcCntrAddr_DialNumLen"/>
+			<arg direction="in" type="i" name="SvcCntrAddr_Ton"/>
+			<arg direction="in" type="i" name="svcCntrAddr_Npi"/>
+			<arg direction="in" type="s" name="svcCntrAddr_DialNum"/>
+			<arg direction="in" type="i" name="protocolId"/>
+			<arg direction="in" type="i" name="dataCodingScheme"/>
+			<arg direction="in" type="i" name="validityPeriod"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			GetSmsParamCnt:
+			@result: Success(0)
+			@recordCount: number of the record count in SIM EFsmsp
+
+			Get the count of SMS parameter records stored in SIM EF.
+		-->
+		<method name="GetSmsParamCnt">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="recordCount"/>
+		</method>
+
+		<!--
+			GetSmsReadyStatus:
+			@readyStatus: Ready Status
+
+			Get the sms ready status (whether ready or not) .
+		-->
+		<method name="GetSmsReadyStatus">
+			<arg direction="out" type="b" name="readyStatus"/>
+		</method>
+
+		<!--
+			IncommingMsg:
+                        @sca: Service Center Address
+                        @msgLength: Size of the array which is actual TPDU message
+                        @tpdu: SMS TPDU message
+
+			This is an unsolicited Incoming SMS Event
+		-->
+		<signal name="IncommingMsg">
+			<arg type="s" name="sca"/>
+			<arg type="i" name="msgLength"/>
+			<arg type="s" name="tpdu"/>
+		</signal>
+
+		<!--
+			IncommingCbMsg:
+                        @cbMsgType: Cell Broadcast  message type. CBS(1), SCHEDULE(2), CBS41(3), INVALID(4)
+                        @msgLength: Size of the array which is actual TPDU message
+                        @tpdu: Cell broadcast message data[Refer 3GPP TS 23.041 9.4.1
+
+			This is an unsolicited Incoming cell broadcast message
+		-->
+		<signal name="IncommingCbMsg">
+			<arg type="i" name="cbMsgType"/>
+			<arg type="i" name="msgLength"/>
+			<arg type="s" name="tpdu"/>
+		</signal>
+
+		<!--
+			IncommingEtwsMsg:
+                        @cbMsgType: ETWS message type. PRIMARY, SECONDARY_GSM, SECONDARY_UMTS
+                        @msgLength: Size of the array which is actual TPDU message
+                        @tpdu: ETWS message data[Refer 3GPP TS 23.041 9.4.1
+
+			This is an unsolicited Incoming cell broadcast message
+		-->
+		<signal name="IncommingEtwsMsg">
+			<arg type="i" name="etwsMsgType"/>
+			<arg type="i" name="msgLength"/>
+			<arg type="s" name="tpdu"/>
+		</signal>
+
+		<!--
+			MemoryStatus:
+			@status: SIM memory status.
+
+			This event is an unsolicited event indicating SIM memory status
+		-->
+		<signal name="MemoryStatus">
+			<arg type="i" name="status"/>
+		</signal>
+
+		<!--
+			SmsReady:
+			@status: Ready indication
+
+			SMS Ready indication 
+		-->
+		<signal name="SmsReady">
+			<arg type="b" name="status"/>
+		</signal>
+
+	</interface>
+
+</node>

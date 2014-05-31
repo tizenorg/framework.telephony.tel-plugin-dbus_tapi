@@ -1,0 +1,9 @@
+<node>
+
+	<interface name="org.tizen.telephony.Manager">
+		<method name="GetModems">
+			<arg direction="out" type="as" name="list"/>
+		</method>
+	</interface>
+
+</node>

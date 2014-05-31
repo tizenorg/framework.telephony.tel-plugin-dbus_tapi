@@ -1,0 +1,2 @@
+@PREFIX@/lib/*
+@PREFIX@/etc/dbus-1/system.d/*

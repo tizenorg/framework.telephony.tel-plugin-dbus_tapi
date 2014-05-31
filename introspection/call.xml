@@ -1,0 +1,254 @@
+<node>
+
+	<interface name="org.tizen.telephony.Call">
+		<method name="Dial">
+			<arg direction="in" type="i" name="call_type"/>
+			<arg direction="in" type="s" name="call_number"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="Answer">
+			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="in" type="i" name="answer_type"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="call_id"/>
+		</method>
+
+		<method name="End">
+			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="in" type="i" name="end_type"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="call_id"/>
+			<arg direction="out" type="i" name="end_type"/>
+		</method>
+
+		<method name="Dtmf">
+			<arg direction="in" type="s" name="dtmf_string"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="Active">
+			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="call_id"/>
+		</method>
+
+		<method name="Hold">
+			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="call_id"/>
+		</method>
+
+		<method name="Swap">
+			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="call_id"/>
+		</method>
+
+		<method name="Join">
+			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="call_id"/>
+		</method>
+
+		<method name="Split">
+			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="call_id"/>
+		</method>
+
+		<method name="Transfer">
+			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="call_id"/>
+		</method>
+
+		<method name="Deflect">
+			<arg direction="in" type="s" name="call_number"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="GetStatus">
+			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="out" type="i" name="call_id"/>
+			<arg direction="out" type="s" name="call_number"/>
+			<arg direction="out" type="i" name="call_type"/>
+			<arg direction="out" type="b" name="call_direction"/>
+			<arg direction="out" type="i" name="call_state"/>
+			<arg direction="out" type="b" name="call_multiparty_state"/>
+		</method>
+
+		<method name="GetStatusAll">
+			<arg direction="out" type="aa{sv}" name="call_status_list"/>
+		</method>
+
+		<method name="SetSoundPath">
+			<arg direction="in" type="i" name="sound_path"/>
+			<arg direction="in" type="b" name="extra_volume"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="GetVolume">
+			<arg direction="in" type="i" name="sound_device"/>
+			<arg direction="in" type="i" name="sound_type"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="aa{sv}" name="list"/>
+		</method>
+
+		<method name="SetVolume">
+			<arg direction="in" type="i" name="sound_device"/>
+			<arg direction="in" type="i" name="sound_type"/>
+			<arg direction="in" type="i" name="sound_volume"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="GetMuteStatus">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="status"/>
+		</method>
+
+		<method name="Mute">
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="Unmute">
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="SetSoundRecording">
+			<arg direction="in" type="i" name="recording_state"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="SetSoundEqualization">
+			<arg direction="in" type="i" name="eq_mode"/>
+			<arg direction="in" type="i" name="eq_direction"/>
+			<arg direction="in" type="s" name="eq_parameter"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="SetSoundNoiseReduction">
+			<arg direction="in" type="i" name="nr_state"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="SetSoundClockStatus">
+			<arg direction="in" type="b" name="clock_status"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+
+		<signal name="VoiceCallStatusIdle">
+			<arg type="i" name="call_id"/>
+			<arg type="i" name="end_cause"/>
+			<arg type="i" name="start_time"/>
+			<arg type="i" name="end_time"/>
+		</signal>
+
+		<signal name="VoiceCallStatusDialing">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="VoiceCallStatusAlert">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="VoiceCallStatusActive">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="VoiceCallStatusHeld">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="VoiceCallStatusIncoming">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="VideoCallStatusIdle">
+			<arg type="i" name="call_id"/>
+			<arg type="i" name="end_cause"/>
+			<arg type="i" name="start_time"/>
+			<arg type="i" name="end_time"/>
+		</signal>
+
+		<signal name="VideoCallStatusDialing">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="VideoCallStatusAlert">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="VideoCallStatusActive">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="VideoCallStatusIncoming">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="Waiting">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="Forwarded">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="BarredIncoming">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="BarredOutgoing">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="ForwardConditional">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="ForwardUnconditional">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="CallActive">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="CallHeld">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="CallJoined">
+			<arg type="i" name="call_id"/>
+		</signal>
+
+		<signal name="CallSoundPath">
+			<arg type="i" name="sound_path"/>
+		</signal>
+
+		<signal name="CallSoundRingbackTone">
+			<arg type="i" name="status"/>
+		</signal>
+
+		<signal name="CallSoundWbamr">
+			<arg type="i" name="status"/>
+		</signal>
+
+		<signal name="CallSoundEqualization">
+			<arg type="i" name="eq_mode"/>
+			<arg type="i" name="eq_direction"/>
+		</signal>
+
+		<signal name="CallSoundNoiseReduction">
+			<arg type="i" name="status"/>
+		</signal>
+
+		<signal name="CallSoundClockStatus">
+			<arg type="b" name="status"/>
+		</signal>
+
+	</interface>
+
+</node>

@@ -1,0 +1,126 @@
+<node>
+
+	<interface name="org.tizen.telephony.Ss">
+		<method name="ActivateBarring">
+			<arg direction="in" type="i" name="ss_class"/>
+			<arg direction="in" type="i" name="barring_mode"/>
+			<arg direction="in" type="s" name="barring_password"/>
+			<arg direction="out" type="aa{sv}" name="barring_list"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="DeactivateBarring">
+			<arg direction="in" type="i" name="ss_class"/>
+			<arg direction="in" type="i" name="barring_mode"/>
+			<arg direction="in" type="s" name="barring_password"/>
+			<arg direction="out" type="aa{sv}" name="barring_list"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="ChangeBarringPassword">
+			<arg direction="in" type="s" name="barring_password"/>
+			<arg direction="in" type="s" name="barring_password_new"/>
+			<arg direction="in" type="s" name="barring_password_confirm"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="GetBarringStatus">
+			<arg direction="in" type="i" name="ss_class"/>
+			<arg direction="in" type="i" name="barring_mode"/>
+			<arg direction="out" type="aa{sv}" name="barring_list"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="RegisterForwarding">
+			<arg direction="in" type="i" name="ss_class"/>
+			<arg direction="in" type="i" name="forward_mode"/>
+			<arg direction="in" type="i" name="forward_no_reply_time"/>
+			<arg direction="in" type="s" name="forward_number"/>
+			<arg direction="out" type="aa{sv}" name="forward_list"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="DeregisterForwarding">
+			<arg direction="in" type="i" name="ss_class"/>
+			<arg direction="in" type="i" name="forward_mode"/>
+			<arg direction="in" type="i" name="forward_no_reply_time"/>
+			<arg direction="in" type="s" name="forward_number"/>
+			<arg direction="out" type="aa{sv}" name="forward_list"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="ActivateForwarding">
+			<arg direction="in" type="i" name="ss_class"/>
+			<arg direction="in" type="i" name="forward_mode"/>
+			<arg direction="in" type="i" name="forward_no_reply_time"/>
+			<arg direction="in" type="s" name="forward_number"/>
+			<arg direction="out" type="aa{sv}" name="forward_list"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="DeactivateForwarding">
+			<arg direction="in" type="i" name="ss_class"/>
+			<arg direction="in" type="i" name="forward_mode"/>
+			<arg direction="in" type="i" name="forward_no_reply_time"/>
+			<arg direction="in" type="s" name="forward_number"/>
+			<arg direction="out" type="aa{sv}" name="forward_list"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="GetForwardingStatus">
+			<arg direction="in" type="i" name="ss_class"/>
+			<arg direction="in" type="i" name="forward_mode"/>
+			<arg direction="out" type="aa{sv}" name="forward_list"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="ActivateWaiting">
+			<arg direction="in" type="i" name="ss_class"/>
+			<arg direction="out" type="aa{sv}" name="waiting_list"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="DeactivateWaiting">
+			<arg direction="in" type="i" name="ss_class"/>
+			<arg direction="out" type="aa{sv}" name="waiting_list"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="GetWaitingStatus">
+			<arg direction="in" type="i" name="ss_class"/>
+			<arg direction="out" type="aa{sv}" name="waiting_list"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="GetCLIStatus">
+			<arg direction="in" type="i" name="cli_type"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="cli_type"/>
+			<arg direction="out" type="i" name="cli_status"/>
+		</method>
+
+		<method name="SendUSSD">
+			<arg direction="in" type="i" name="ussd_type"/>
+			<arg direction="in" type="i" name="ussd_len"/>
+			<arg direction="in" type="s" name="ussd_string"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="ussd_type"/>
+			<arg direction="out" type="i" name="ussd_status"/>
+			<arg direction="out" type="i" name="ussd_len"/>
+			<arg direction="out" type="s" name="ussd_string"/>
+		</method>
+
+		<signal name="NotifyUSSD">
+			<arg type="i" name="ussd_status"/>
+			<arg type="i" name="ussd_len"/>
+			<arg type="s" name="ussd_string"/>
+		</signal>
+
+		<signal name="ReleaseComplete">
+			<arg type="i" name="data_len"/>
+			<arg type="v" name="data"/>
+		</signal>
+
+	</interface>
+
+</node>

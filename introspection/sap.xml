@@ -1,0 +1,55 @@
+<node>
+
+	<interface name="org.tizen.telephony.Sap">
+
+		<method name="Connect">
+			<arg direction="in" type="i" name="req_max_size"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="resp_max_size"/>
+		</method>
+
+		<method name="Disconnect">
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="GetStatus">
+			<arg direction="out" type="i" name="status"/>
+		</method>
+
+		<method name="GetATR">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="v" name="atr"/>
+		</method>
+
+		<method name="TransferAPDU">
+			<arg direction="in" type="v" name="req_apdu"/>
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="v" name="resp_apdu"/>
+		</method>
+
+		<method name="SetProtocol">
+			<arg direction="in" type="i" name="protocol"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="SetPower">
+			<arg direction="in" type="i" name="mode"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="GetCardReaderStatus">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="status"/>
+		</method>
+
+		<signal name="status">
+			<arg type="i" name="status"/>
+		</signal>
+
+		<signal name="disconnect">
+			<arg type="i" name="type"/>
+		</signal>
+
+	</interface>
+
+</node>
