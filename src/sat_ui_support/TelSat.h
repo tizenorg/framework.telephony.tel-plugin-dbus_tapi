@@ -348,6 +348,8 @@ typedef struct
 typedef struct
 {
 	int					commandId;		/**<Proactive Command Number sent by USIM*/
+	TelSimTypeOfNum_t ton; /**<	type of number 		*/
+	TelSimNumberingPlanIdentity_t npi; /**<	number plan identity 		*/
 	unsigned short		ssStringLen;
 	unsigned char		ssString[TAPI_SAT_DEF_SS_LEN_MAX+1];
 }TelSatSendSsIndSsData_t;

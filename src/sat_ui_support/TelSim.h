@@ -1,5 +1,5 @@
 /*
- * tel-plugin-dbus_tapi
+ * libslp-tapi
  *
  * Copyright (c) 2011 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -49,6 +49,9 @@ extern "C"
 /** Dialing number max length */
 #define TAPI_SIM_XDN_DIALING_NUMBER_LEN	20
 
+/** MSISDN number max length */
+#define TAPI_SIM_MSISDN_DIALING_NUMBER_LEN	26
+
 /** CSP profile entry count max length */
 #define TAPI_SIM_CPHS_CUSTOMER_SERVICE_PROFILE_ENTRY_COUNT_MAX	11
 
@@ -59,10 +62,20 @@ extern "C"
 #define TAPI_SIM_AUTH_MAX_RESP_DATA_LEN 128
 
 /** SAP APDU max length */
-#define TAPI_SIM_APDU_MAX_LEN 256+2 // to be fine tuned according to lower layers, 2bytes for SW1 & SW2 should be added
+/** 2048 is for QMI definition. (1024 : general length, 1024 : extra length for additional response) */
+#define TAPI_SIM_APDU_MAX_LEN 2048
 
 /** SIM 3G Phone book EF Max count */
 #define TAPI_SIM_PB_3G_FILE_MAX_COUNT 13
+
+/** SIM Phone book Record name max length */
+#define TAPI_SIM_PB_RECORD_NAME_MAX_LEN 255
+
+/** SIM Phone book Record number max length */
+#define TAPI_SIM_PB_RECORD_NUMBER_MAX_LEN 255
+
+/** SIM Phone book Record email max length */
+#define TAPI_SIM_PB_RECORD_EMAIL_MAX_LEN 255
 
 /** SAP Answer to Reset data max length */
 #define TAPI_SIM_SAP_ATR_DATA	256
@@ -71,7 +84,13 @@ extern "C"
 
 #define TAPI_SIM_NET_SHORT_NAME_MAX_LEN 10
 
+#define	TAPI_SIM_MSP_CNT_MAX 2
+
 #define TAPI_SIM_OPERATION_TIMEOUT 1234
+
+#define TAPI_SIM_SST_SERVICE_CNT_MAX 56
+
+#define TAPI_SIM_UST_SERVICE_CNT_MAX 64
 
 /**
  * @enum TelSimCardType_t
@@ -155,7 +174,7 @@ typedef enum {
 typedef enum {
 	TAPI_SIM_PIN_OPERATION_SUCCESS, /**< Operation involving PIN (verification/change/enable/disable, etc) is successful.  */
 	TAPI_SIM_BUSY, /**< SIM is busy  */
-	TAPI_SIM_CARD_ERROR, /**< SIM card error - Permanently blocked and general errors   */
+	TAPI_SIM_CARD_ERROR, /**< SIM card error - General errors   */
 	TAPI_SIM_INCOMPATIBLE_PIN_OPERATION, /**< SIM Incompatible pin operation that is in case when invalid SIM command is given or incorrect parameters are supplied to the SIM. */
 	TAPI_SIM_PIN_INCORRECT_PASSWORD, /**< SIM PIN  Incorrect password */
 	TAPI_SIM_PUK_INCORRECT_PASSWORD, /**< SIM PUK Incorrect Password */
@@ -166,6 +185,7 @@ typedef enum {
 	TAPI_SIM_SPCK_REQUIRED, /**< Service Provider Control Key Required */
 	TAPI_SIM_CCK_REQUIRED, /**< Corporate Control Key Required */
 	TAPI_SIM_LOCK_REQUIRED, /**<  PH-SIM (phone-SIM) locked state **/
+	TAPI_SIM_PERM_BLOCKED /**< Permanently Blocked **/
 } TelSimPinOperationResult_t;
 
 /**
@@ -295,6 +315,7 @@ typedef enum {
 	TAPI_SIM_STATUS_SIM_CCK_REQUIRED = 0x0a, /**<  Corporate Control Key required state **/
 	TAPI_SIM_STATUS_CARD_REMOVED = 0x0b, /**<  Card removed **/
 	TAPI_SIM_STATUS_SIM_LOCK_REQUIRED = 0x0c, /**<  PH-SIM (phone-SIM) locked state **/
+	TAPI_SIM_STATUS_CARD_CRASHED = 0x0d, /**< Runtime SIM card error **/
 	TAPI_SIM_STATUS_UNKNOWN = 0xff /**<  Unknown status. It can be initial status **/
 } TelSimCardStatus_t;
 
@@ -342,10 +363,12 @@ typedef enum {
  * This enum gives mailbox type.
  */
 typedef enum {
-	TAPI_SIM_MAILBOX_VOICE = 0x01, /**< CFIS voice*/
-	TAPI_SIM_MAILBOX_VOICE2 = 0x02, /**< CFIS voice*/
-	TAPI_SIM_MAILBOX_FAX = 0x03, /**< CFIS fax*/
-	TAPI_SIM_MAILBOX_DATA = 0x04, /**< CFIS data*/
+	TAPI_SIM_MAILBOX_VOICE = 0x01, /**< Voicemail*/
+	TAPI_SIM_MAILBOX_FAX = 0x02, /**< Fax*/
+	TAPI_SIM_MAILBOX_EMAIL = 0x03, /**< Email*/
+	TAPI_SIM_MAILBOX_OTHER = 0x04, /**< Other*/
+	TAPI_SIM_MAILBOX_VIDEO = 0x05, /**< Videomail*/
+	TAPI_SIM_MAILBOX_DATA = 0x06, /**< Data*/
 } TelSimMailboxType_t;
 
 /**
@@ -560,6 +583,184 @@ typedef enum {
 } TelSimPb3GFileType_t;
 
 /**
+ * @enum TelSimSSTService_t
+ *  This enumeration defines the list of SST services in SIM Service Table. (GSM)
+ */
+typedef enum {
+	// service 1 ~ 8
+	TAPI_SIM_SST_CHV1_DISABLE_FUNC = 0,	/**< CHV1 disable function */
+	TAPI_SIM_SST_ADN,					/**< abbreviated Dialing number */
+	TAPI_SIM_SST_FDN,					/**< fixed Dialing number */
+	TAPI_SIM_SST_SMS,					/**< short message storage */
+	TAPI_SIM_SST_AOC,					/**< advice of charge */
+	TAPI_SIM_SST_CCP,					/**< capability configuration parameters */
+	TAPI_SIM_SST_PLMN_SELECTOR,			/**< plmn selector */
+	TAPI_SIM_SST_RFU1,					/**< rfu */
+
+	// service 9 ~ 16
+	TAPI_SIM_SST_MSISDN = 8,			/**< msisdn */
+	TAPI_SIM_SST_EXT1,					/**< extension1	*/
+	TAPI_SIM_SST_EXT2,					/**< extension2 */
+	TAPI_SIM_SST_SMS_PARAMS,				/**< sms parameteres */
+	TAPI_SIM_SST_LND,					/**< last number dialed */
+	TAPI_SIM_SST_CELL_BROADCAST_MSG_ID,	/**< cell broadcast message identifier */
+	TAPI_SIM_SST_GID_LV1,				/**< group identifier level 1 */
+	TAPI_SIM_SST_GID_LV2,				/**< group identifier level 2 */
+
+	// service 17 ~ 24
+	TAPI_SIM_SST_SPN = 16,				/**< service provider name */
+	TAPI_SIM_SST_SDN,					/**< service Dialing number */
+	TAPI_SIM_SST_EXT3,					/**< extension3 */
+	TAPI_SIM_SST_RFU2,					/**< rfu */
+	TAPI_SIM_SST_VGCS_GID_LIST,			/**< vgcs group identifier (EF-VGCS, EF-VGCSS) */
+	TAPI_SIM_SST_VBS_GID_LIST,			/**< vbs group identifier (EF-VBS, EF-VBSS) */
+	TAPI_SIM_SST_ENHANCED_MULTI_LV_PRECEDENCE_PREEMPTION_SRVC,	/**< enhanced multi-level precedence and pre-emption service */
+	TAPI_SIM_SST_AUTO_ANSWER_FOR_EMLPP,	/**< automatic answer fro eMLPP */
+
+	// service 25 ~ 32,
+	TAPI_SIM_SST_DATA_DOWNLOAD_VIA_SMS_CB = 24,	/**< data download via sms-cb */
+	TAPI_SIM_SST_DATA_DOWNLOAD_VIA_SMS_PP,		/**< data download via sms-pp */
+	TAPI_SIM_SST_MENU_SELECTION,					/**< menu selection */
+	TAPI_SIM_SST_CALL_CTRL,						/**< call control */
+	TAPI_SIM_SST_PROACTIVE_SIM,					/**< proactive sim command */
+	TAPI_SIM_SST_CELL_BROADCAST_MSG_ID_RANGES,	/**< cell broadcast message identifier ranges */
+	TAPI_SIM_SST_BDN,							/**< barred Dialing numbers */
+	TAPI_SIM_SST_EXT4,							/**< extension 4 */
+
+	// service 33 ~ 40
+	TAPI_SIM_SST_DEPERSONALIZATION_CTRL_KEYS = 32,	/**< de-personalization control keys */
+	TAPI_SIM_SST_COOPERATIVE_NETWORK_LIST,			/**< co-operative network list */
+	TAPI_SIM_SST_SMS_STATUS_REPORTS,					/**< short message status reports */
+	TAPI_SIM_SST_NIA,					/**< network's indication of alerting in the MS (NIA) */
+	TAPI_SIM_SST_MO_SMS_CTRL_BY_SIM,		/**< mobile-originated short message control by sim */
+	TAPI_SIM_SST_GPRS,					/**< gprs */
+	TAPI_SIM_SST_IMG,					/**< image */
+	TAPI_SIM_SST_SOLSA,					/**< support of local service area */
+
+	// service 41 ~ 48
+	TAPI_SIM_SST_USSD_STR_DATA_OBJECT_SUPPORTED_IN_CALL_CTRL = 40,	/**< ussd string data object supported in call control */
+	TAPI_SIM_SST_RUN_AT_CMD_CMD,							/**< RUN AT COMMAND command */
+	TAPI_SIM_SST_USER_CTRLED_PLMN_SELECTOR_WACT,			/**< user controlled PLMN selector with Access technology */
+	TAPI_SIM_SST_OPERATOR_CTRLED_PLMN_SELECTOR_WACT,		/**< operator controlled PLMN selector with Access technology */
+	TAPI_SIM_SST_HPLMN_SELECTOR_WACT,			/**< HPLMN selector with access technology */
+	TAPI_SIM_SST_CPBCCH_INFO,					/**< CPBCCH information */
+	TAPI_SIM_SST_INVESTIGATION_SCAN,				/**< investigation scan */
+	TAPI_SIM_SST_EXTENDED_CAPA_CONF_PARAMS,		/**< extended capability configuration parameters */
+
+	//	service 49 ~ 56
+	TAPI_SIM_SST_MEXE = 48,				/**< MExE */
+	TAPI_SIM_SST_RPLMN_LAST_USED_ACCESS_TECH,	/**< RPLMN last used access technology */
+	TAPI_SIM_SST_PLMN_NETWORK_NAME,		/*PLMN Network Name*/
+	TAPI_SIM_SST_OPERATOR_PLMN_LIST,		/*Operator PLMN List*/
+	TAPI_SIM_SST_MBDN,					/*Mailbox Dialling Numbers*/
+	TAPI_SIM_SST_MWIS,					/*Message Waiting Indication Status*/
+	TAPI_SIM_SST_CFIS,					/*Call Forwarding Indication Status*/
+	TAPI_SIM_SST_SPDI,					/*Service Provider Display Information*/
+} TelSimSSTService_t;
+
+/**
+ * @enum TelSimUSTService_t
+ *  This enumeration defines the list of UST services in SIM Service Table. (USIM)
+ */
+typedef enum {
+	// service 1 ~ 8
+	TAPI_SIM_UST_LOCAL_PB = 0,		/**< local phone book */
+	TAPI_SIM_UST_FDN,				/**< fixed Dialing number */
+	TAPI_SIM_UST_EXT2,				/**< extension2 */
+	TAPI_SIM_UST_SDN,				/**< service Dialing number */
+	TAPI_SIM_UST_EXT3,				/**< extension3 */
+	TAPI_SIM_UST_BDN,				/**< barred Dialing numbers */
+	TAPI_SIM_UST_EXT4,				/**< extension 4 */
+	TAPI_SIM_UST_OUTGOING_CALL_INFO,	/**< outgoing call information */
+
+	// service 9 ~ 16
+	TAPI_SIM_UST_INCOMING_CALL_INFO = 8,		/**< incoming call information */
+	TAPI_SIM_UST_SMS,						/**< short message storage */
+	TAPI_SIM_UST_SMS_STATUS_REPORTS,			/**< short message status reports */
+	TAPI_SIM_UST_SMS_PARAMS,					/**< sms parameteres */
+	TAPI_SIM_UST_AOC,						/**< advice of charge */
+	TAPI_SIM_UST_CCP,						/**< capability configuration parameters */
+	TAPI_SIM_UST_CELL_BROADCAST_MSG_ID,		/**< cell broadcast message identifier */
+	TAPI_SIM_UST_CELL_BROADCAST_MSG_ID_RANGES,	/**< cell broadcast message identifier ranges */
+
+	// service 17 ~ 24
+	TAPI_SIM_UST_GID_LV1 = 16,						/**< group identifier level 1 */
+	TAPI_SIM_UST_GID_LV2,							/**< group identifier level 2 */
+	TAPI_SIM_UST_SPN,								/**< service provider name */
+	TAPI_SIM_UST_USER_CTRLED_PLMN_SELECTOR_WACT,		/**< user controlled PLMN selector with Access technology */
+	TAPI_SIM_UST_MSISDN,											/**< msisdn */
+	TAPI_SIM_UST_IMG,											/**< image */
+	TAPI_SIM_UST_SOLSA,											/**< support of local service area */
+	TAPI_SIM_UST_ENHANCED_MULTI_LV_PRECEDENCE_PREEMPTION_SRVC,	/**< enhanced multi-level precedence and pre-emption service */
+
+	// service 25 ~ 32
+	TAPI_SIM_UST_AUTO_ANSWER_FOR_EMLPP = 24,	/**< automatic answer fro eMLPP */
+	TAPI_SIM_UST_RFU1,						/**< rfu */
+	TAPI_SIM_UST_GSM_ACCESS,					/**< gsm access */
+	TAPI_SIM_UST_DATA_DOWNLOAD_VIA_SMS_PP,	/**< data download via sms-pp */
+	TAPI_SIM_UST_DATA_DOWNLOAD_VIA_SMS_CB,	/**< data download via sms-cb */
+	TAPI_SIM_UST_CALL_CTRL,					/**< call control by usim*/
+	TAPI_SIM_UST_MO_SMS_CTRL,				/**< mobile-originated short message control by usim */
+	TAPI_SIM_UST_RUN_AT_CMD_CMD,				/**< RUN AT COMMAND command */
+
+	// service 33 ~ 40
+	TAPI_SIM_UST_SHALL_BE_SET_TO_ONE = 32,	/**< shall be set to 1 */
+	TAPI_SIM_UST_ENABLED_SRVC_TABLE,			/**< enabled service table */
+	TAPI_SIM_UST_ACL,						/**< APN control list */
+	TAPI_SIM_UST_DEPERSONALIZATION_CTRL_KEYS,	/**< de-personalization control keys */
+	TAPI_SIM_UST_COOPERATIVE_NETWORK_LIST,		/**< co-operative network list */
+	TAPI_SIM_UST_GSM_SEC_CONTEXT,				/**< gsm security context */
+	TAPI_SIM_UST_CPBCCH_INFO,					/**< CPBCCH information */
+	TAPI_SIM_UST_INVESTIGATION_SCAN,				/**< investigation scan */
+
+	// service 41 ~ 48
+	TAPI_SIM_UST_MEXE = 40,								/**< MExE */
+	TAPI_SIM_UST_OPERATOR_CTRLED_PLMN_SELECTOR_WACT,		/**< operator controlled PLMN selector with Access technology */
+	TAPI_SIM_UST_HPLMN_SELECTOR_WACT,	/**< HPLMN selector with access technology */
+	TAPI_SIM_UST_EXT5,					/**< extension 5 */
+	TAPI_SIM_UST_PLMN_NETWORK_NAME,		/*PLMN Network Name*/
+	TAPI_SIM_UST_OPERATOR_PLMN_LIST,		/*Operator PLMN List*/
+	TAPI_SIM_UST_MBDN,					/*Mailbox Dialling Numbers*/
+	TAPI_SIM_UST_MWIS,					/*Message Waiting Indication Status*/
+
+	// service 49 ~ 56
+	TAPI_SIM_UST_CFIS = 48,						/*Call Forwarding Indication Status*/
+	TAPI_SIM_UST_RPLMN_LAST_USED_ACCESS_TECH,	/**< RPLMN last used access technology */
+	TAPI_SIM_UST_SPDI,							/*Service Provider Display Information*/
+	TAPI_SIM_UST_MMS,							/**< multi media messaging service */
+	TAPI_SIM_UST_EXT8,							/**< extension 8 */
+	TAPI_SIM_UST_CALL_CTRL_ON_GPRS,				/**< call control on gprs by usim */
+	TAPI_SIM_UST_MMS_USER_CONNECTIVITY_PARAMS,	/**< mms user connectivity parameters */
+	TAPI_SIM_UST_NIA,							/**< network's indication of alerting in the MS (NIA) */
+
+	// service 57 ~ 64
+	TAPI_SIM_UST_VGCS_GID_LIST = 56,		/**< vgcs group identifier List (EF-VGCS, EF-VGCSS) */
+	TAPI_SIM_UST_VBS_GID_LIST,			/**< vbs group identifier List (EF-VBS, EF-VBSS) */
+	TAPI_SIM_UST_PSEUDONYM,
+	TAPI_SIM_UST_USER_CTRLED_PLMN_SELECTOR_IWLAN,			/**< user controlled PLMN selector for I-WLAN access */
+	TAPI_SIM_UST_OPERATOR_CTRLED_PLMN_SELECTOR_IWLAN,		/**< operator controlled PLMN selector for I-WLAN access */
+	TAPI_SIM_UST_USER_CTRLED_WSID_LIST,
+	TAPI_SIM_UST_OPERATOR_CTRLED_WSID_LIST,
+	TAPI_SIM_UST_VGCS_SEC,
+} TelSimUSTService_t;
+
+typedef struct {
+	char service[TAPI_SIM_SST_SERVICE_CNT_MAX];	// should access with 'enum TelSimSSTService_t' as index
+} TelSimSST_t;
+
+typedef struct {
+	char service[TAPI_SIM_UST_SERVICE_CNT_MAX];	// should access with 'enum TelSimUSTService_t' as index
+} TelSimUST_t;
+
+typedef struct {
+	TelSimCardType_t sim_type;
+	union {
+		TelSimSST_t sst;
+		TelSimUST_t ust;
+	} table;
+} TelSimServiceTable_t;
+
+/**
  * This data structure defines the data for the Imsi information.
  */
 typedef struct {
@@ -579,43 +780,108 @@ typedef struct {
 	TelSimEcc_t list[15];
 }TelSimEccList_t;
 
-/**
- *This data structure defines the data which is provided a unique identification number for the (U)ICC.
- */
 typedef struct {
 	int icc_length; /**< Integrated Circuit Card number length */
 	char icc_num[TAPI_SIM_ICCID_LEN_MAX]; /**< Integrated Circuit Card number */
 } TelSimIccIdInfo_t;
 
 typedef struct {
-	int line1;
-	int line2;
-}TelSimCallForwardingInfo_t;
-
-typedef struct {
-	int line1;
-	int line2;
-	int fax;
-	int video;
-}TelSimMessageWaitingInfo_t;
-
-typedef struct {
-	TelSimMailboxType_t type;
-	char name[TAPI_SIM_XDN_DIALING_NUMBER_LEN+1];
-	char number[TAPI_SIM_XDN_ALPHA_ID_MAX_LEN+1];
-	TelSimTypeOfNum_t ton;
-}TelSimMailboxInfo_t;
+	int b_cphs;
+	int rec_index; /**< index which stands for the location where record is saved in SIM*/
+	int profile_num; /**< SIM profile index*/
+	TelSimMailboxType_t mb_type;
+	int alpha_id_max_len; /**< alpha max length in SIM - READ ONLY*/
+	char alpha_id[TAPI_SIM_XDN_ALPHA_ID_MAX_LEN + 1]; /**< Alpha Identifier */
+	TelSimTypeOfNum_t ton; /**< Type Of Number */
+	TelSimNumberingPlanIdentity_t npi; /**< Number Plan Identity */
+	char num[TAPI_SIM_XDN_DIALING_NUMBER_LEN + 1]; /**< Dialing Number/SSC String */
+	unsigned char cc_id; /**< Capability/Configuration Identifier */
+	unsigned char ext1_id; /**< Extensiion1 Record Identifier */
+}TelSimMailBoxNumber_t;
 
 typedef struct {
 	int count;
-	TelSimMailboxInfo_t list[4]; //max is 4
+	TelSimMailBoxNumber_t list[TAPI_SIM_MSP_CNT_MAX*5]; //max is 10
 }TelSimMailboxList_t;
+
+typedef struct {
+	int rec_index;
+	unsigned char msp_num; /**< MSP number*/
+	unsigned char cfu_status; /**< call forwarding unconditional indication status*/
+	TelSimTypeOfNum_t ton; /**< TON*/
+	TelSimNumberingPlanIdentity_t npi; /**< NPI*/
+	char cfu_num[TAPI_SIM_XDN_DIALING_NUMBER_LEN + 1];/**< Dialing Number/SSC String*/
+	unsigned char cc2_id; /**< Capability/Configuration2 Record Identifier */
+	unsigned char ext7_id; /**< Extension 7 Record Identifier */
+}TelSimCfis_t;
+
+typedef struct {
+	int profile_count;
+	TelSimCfis_t cf[TAPI_SIM_MSP_CNT_MAX];
+}TelSimCfisList_t;
+
+typedef struct {
+	int b_line1; /**< CallForwardUnconditionalLine 1 */
+	int b_line2; /**< CallForwardUnconditionalLine 2 */
+	int b_fax; /**< CallForwardUnconditional FAX */
+	int b_data; /**<CallForwardUnconditional data*/
+}TelSimCphsCf_t;
+
+typedef struct {
+	int b_cphs;
+	TelSimCfisList_t cf_list;
+	TelSimCphsCf_t cphs_cf;
+}TelSimCallForwardingResp_t;
+
+typedef struct {
+	int b_cphs;
+	union {
+		TelSimCfis_t cf;
+		TelSimCphsCf_t cphs_cf;
+	} cf_data_u;
+}TelSimCallForwardingReq_t;
+
+typedef struct {
+	int rec_index;
+	unsigned char indicator_status; /**< Indicator Type*/
+	int voice_count; /**< VoiceMail Count*/
+	int fax_count; /**< FAX Count*/
+	int email_count; /**< Email Count*/
+	int other_count; /**< Other Count*/
+	int video_count; /**< VideoMail Count*/
+}TelSimMwis_t;
+
+typedef struct {
+	int profile_count;
+	TelSimMwis_t mw[TAPI_SIM_MSP_CNT_MAX];
+}TelSimMwisList_t;
+
+typedef struct {
+	int b_voice1; /**< VoiceMsgLine1 message waiting flag */
+	int b_voice2; /**< VoiceMsgLine2 message waiting flag */
+	int b_fax; /**< FAX message waiting flag */
+	int b_data; /**< Data message waiting flag */
+}TelSimCphsMw_t;
+
+typedef struct {
+	int b_cphs;
+	TelSimMwisList_t mw_list;
+	TelSimCphsMw_t cphs_mw;
+}TelSimMessageWaitingResp_t;
+
+typedef struct {
+	int b_cphs;
+	union {
+		TelSimMwis_t mw;
+		TelSimCphsMw_t cphs_mw;
+	} mw_data_u;
+}TelSimMessageWaitingReq_t;
 
 /**
  *	This data structure represents MSISDN information
  */
 typedef struct {
-	char num[TAPI_SIM_XDN_DIALING_NUMBER_LEN + 1]; /**< MSISDN number. If not exist, Null string will be returned*/
+	char num[TAPI_SIM_MSISDN_DIALING_NUMBER_LEN + 1]; /**< MSISDN number. If not exist, Null string will be returned*/
 	char name[TAPI_SIM_XDN_ALPHA_ID_MAX_LEN + 1]; /**< MSISDN name. If not exist, Null string will be returned*/
 } TelSimSubscriberInfo_t;
 
@@ -744,9 +1010,6 @@ typedef struct {
 	unsigned char atr_resp[TAPI_SIM_APDU_MAX_LEN];
 } TelSimAtrResp_t;
 
-
-/**CPHS related structs **/
-
 /**
  *	This sturcture gives information of available optional CPHS SIM files.
  */
@@ -794,41 +1057,6 @@ typedef struct {
 	TelSimCphsPhaseType_t CphsPhase; /**< CPHS phase type */
 	TelSimCphsServiceTable_t CphsServiceTable; /**< CPHS service table */
 } TelSimCphsInfo_t;
-
-/*
- DATA FIELD -6F 11: Voice message waiting flag
- Access Conditions:
- READ	CHV1
- UPDATE	CHV1
- */
-/**
- *
- * This struct gives CPHS voice message waiting flag information .
- */
-typedef struct {
-	int bWaitVoiceMsgLine1; /**< VoiceMsgLine 1 */
-	int bWaitVoiceMsgLine2; /**< VoiceMsgLine 2 */
-	int bWaitFaxMsg; /**< FAX Msg */
-	int bWaitDataMsg; /**< Data Msg */
-} TelSimCphsVoiceMsgWaitFlagInfo_t;
-
-/*
- DATA FIELD -6F 13: Call forwarding flags
- Access Conditions:
- READ	CHV1
- UPDATE	CHV1
- */
-/**
- * This struct gives CPHS call forwarding flag information.
- */
-typedef struct {
-	int bCallForwardUnconditionalLine1; /**< CallForwardUnconditionalLine 1 */
-	int bCallForwardUnconditionalLine2; /**< CallForwardUnconditionalLine 2 */
-	int bCallForwardUnconditionalFax; /**< CallForwardUnconditional FAX */
-	int bCallForwardUnconditionalData; /**<CallForwardUnconditional data*/
-	int bCallForwardUnconditionalSms; /**< CallForwardUnconditional SMS */
-	int bCallForwardUnconditionalBearer; /**< CallForwardUnconditional bearer*/
-} TelSimCphsCallForwardingFlagInfo_t;
 
 /*
  DATA FIELD -6F 19: Information Numbers
@@ -1037,38 +1265,46 @@ typedef struct {
  */
 typedef struct {
 	int b_fdn; /**< Fixed Dialing Number */
-	int b_adn; /**< SIM - ADN(2G phonebook	 */
+	int b_adn; /**< SIM - ADN(2G phonebook, Under DF phonebook	 */
 	int b_sdn; /**< Service Dialing Number  */
 	int b_3g; /**< USIM - 3G phonebook */
 	int b_aas; /**< Additional number Alpha String phonebook */
 	int b_gas; /**< Grouping information Alpha String phonebook */
 } TelSimPbList_t;
 
+/**
+ * This data structure gives the phone book status of current SIM.
+ */
+typedef struct {
+	int init_completed;
+	TelSimPbList_t pb_list;
+} TelSimPbStatus_t;
+
 typedef struct {
 	TelSimPbType_t phonebook_type;
 	unsigned short index;
 	unsigned short next_index; //this field is not used in add/update case
 
-	unsigned char name[60];
+	unsigned char name[TAPI_SIM_PB_RECORD_NAME_MAX_LEN+1];
 	TelSimTextEncrypt_t dcs;
 
-	unsigned char number[40];
+	unsigned char number[TAPI_SIM_PB_RECORD_NUMBER_MAX_LEN+1];
 	TelSimTypeOfNum_t ton;
 
 	/* following field is valid in only USIM*/
-	unsigned char sne[60];
+	unsigned char sne[TAPI_SIM_PB_RECORD_NAME_MAX_LEN+1];
 	TelSimTextEncrypt_t sne_dcs;
-	unsigned char anr1[40];
+	unsigned char anr1[TAPI_SIM_PB_RECORD_NUMBER_MAX_LEN+1];
 	TelSimTypeOfNum_t anr1_ton;
-	unsigned char anr2[40];
+	unsigned char anr2[TAPI_SIM_PB_RECORD_NUMBER_MAX_LEN+1];
 	TelSimTypeOfNum_t anr2_ton;
-	unsigned char anr3[40];
+	unsigned char anr3[TAPI_SIM_PB_RECORD_NUMBER_MAX_LEN+1];
 	TelSimTypeOfNum_t anr3_ton;
 
-	unsigned char email1[60];
-	unsigned char email2[60];
-	unsigned char email3[60];
-	unsigned char email4[60];
+	unsigned char email1[TAPI_SIM_PB_RECORD_EMAIL_MAX_LEN+1];
+	unsigned char email2[TAPI_SIM_PB_RECORD_EMAIL_MAX_LEN+1];
+	unsigned char email3[TAPI_SIM_PB_RECORD_EMAIL_MAX_LEN+1];
+	unsigned char email4[TAPI_SIM_PB_RECORD_EMAIL_MAX_LEN+1];
 
 	unsigned short group_index; //GRP
 	unsigned short pb_control; //PBC
@@ -1092,6 +1328,7 @@ typedef struct {
 	unsigned short PbIndexMax; /**< Phone book maximum index */
 	unsigned short PbNumLenMax; /**< Phone number maximum length */
 	unsigned short PbTextLenMax; /**< Text maximum length */
+	unsigned short PbUsedCount; /**< Phone book used record count */
 } TelSimPbEntryInfo_t;
 
 /**

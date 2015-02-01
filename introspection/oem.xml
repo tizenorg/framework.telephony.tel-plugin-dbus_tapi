@@ -1,0 +1,29 @@
+<node>
+	<!--
+		org.tizen.telephony.Oem:
+		@short_description: Tizen Telephony Oem interface
+
+		Oem interface.
+
+	-->
+	<interface name="org.tizen.telephony.OEM">
+		<method name="SendOemData">
+			<arg direction="in" type="i" name="oem_id"/>
+			<arg direction="in" type="s" name="data"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="SendOemDataWithResponse">
+			<arg direction="in" type="i" name="oem_id"/>
+			<arg direction="in" type="s" name="data"/>
+			<arg direction="out" type="i" name="oem_id"/>
+			<arg direction="out" type="s" name="data"/>
+		</method>
+
+		<signal name="OemData">
+			<arg type="i" name="oem_id"/>
+			<arg type="s" name="data"/>
+		</signal>
+	</interface>
+
+</node>

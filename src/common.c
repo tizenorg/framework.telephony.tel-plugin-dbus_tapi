@@ -1,5 +1,5 @@
 /*
- * tel-plugin-dbus_tapi
+ * tel-plugin-dbus-tapi
  *
  * Copyright (c) 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -30,23 +30,24 @@
 #include <server.h>
 #include <user_request.h>
 
+#include <libxml/xmlmemory.h>
+#include <libxml/parser.h>
+#include <libxml/tree.h>
+
 #include "generated-code.h"
 #include "common.h"
 
 
 static void _free_hook(UserRequest *ur)
 {
-	const struct tcore_user_info *ui;
+	struct dbus_request_info *user_info;
 
-	ui = tcore_user_request_ref_user_info(ur);
-	if (!ui)
-		return;
-
-	if (ui->user_data)
-		free(ui->user_data);
+	user_info = (struct dbus_request_info *)tcore_user_request_ref_user_info(ur);
+	if (user_info)
+		free(user_info);
 }
 
-char *dbus_plugin_get_plugin_name_by_object_path(const char *object_path)
+char *dbus_plugin_get_cp_name_by_object_path(const char *object_path)
 {
 	if (!object_path)
 		return NULL;
@@ -61,29 +62,25 @@ char *dbus_plugin_get_plugin_name_by_object_path(const char *object_path)
 UserRequest *dbus_plugin_macro_user_request_new(struct custom_data *ctx, void *object, GDBusMethodInvocation *invocation)
 {
 	UserRequest *ur = NULL;
-	char *plugin_name;
-	struct tcore_user_info ui = { 0, };
+	char *cp_name;
 	struct dbus_request_info *dbus_info;
 
-	plugin_name = GET_PLUGIN_NAME(invocation);
-	dbg("plugin_name = [%s]", plugin_name);
+	cp_name = GET_CP_NAME(invocation);
+	dbg("cp_name = [%s]", cp_name);
 
-	ur = tcore_user_request_new(ctx->comm, plugin_name);
+	ur = tcore_user_request_new(ctx->comm, cp_name);
 
-	dbus_info = calloc(sizeof(struct dbus_request_info), 1);
+	dbus_info = calloc(1, sizeof(struct dbus_request_info));
 	dbus_info->interface_object = object;
 	dbus_info->invocation = invocation;
 
-	ui.user_data = dbus_info;
-
-	tcore_user_request_set_user_info(ur, &ui);
+	tcore_user_request_set_user_info(ur, dbus_info);
 	tcore_user_request_set_free_hook(ur, _free_hook);
 
 	return ur;
 }
 
-gboolean check_access_control(GDBusMethodInvocation *invoc, const char *label,
-							const char *perm)
+gboolean check_access_control (GDBusMethodInvocation *invoc, const char *label, const char *perm)
 {
 	GDBusConnection *conn;
 	GVariant *result_pid;
@@ -94,52 +91,107 @@ gboolean check_access_control(GDBusMethodInvocation *invoc, const char *label,
 	int ret;
 	int result = FALSE;
 
-	conn = g_dbus_method_invocation_get_connection(invoc);
-	if (conn == NULL) {
-		err("access control denied(no connection info)");
+	conn = g_dbus_method_invocation_get_connection (invoc);
+	if (!conn) {
+		warn ("access control denied (no connection info)");
 		goto OUT;
 	}
 
-	sender = g_dbus_method_invocation_get_sender(invoc);
-	dbg("sender: %s", sender);
+	sender = g_dbus_method_invocation_get_sender (invoc);
 
-	param = g_variant_new("(s)", sender);
-	if (param == NULL) {
-		err("access control denied(sender info fail)");
+	param = g_variant_new ("(s)", sender);
+	if (!param) {
+		warn ("access control denied (sender info fail)");
 		goto OUT;
 	}
 
 	result_pid = g_dbus_connection_call_sync (conn, "org.freedesktop.DBus",
-				"/org/freedesktop/DBus",
-				"org.freedesktop.DBus",
-				"GetConnectionUnixProcessID",
-				param, NULL,
-				G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
-
+			"/org/freedesktop/DBus",
+			"org.freedesktop.DBus",
+			"GetConnectionUnixProcessID",
+			param, NULL,
+			G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
 	if (error) {
-		err("access control denied (dbus error: %d(%s))",
-					error->code, error->message);
+		warn ("access control denied (dbus error: %d(%s))",
+				error->code, error->message);
 		g_error_free (error);
 		goto OUT;
 	}
 
-	if (result_pid == NULL) {
-		err("access control denied(fail to get pid)");
+	if (!result_pid) {
+		warn ("access control denied (fail to get pid)");
 		goto OUT;
 	}
 
-	g_variant_get(result_pid, "(u)", &pid);
-	g_variant_unref(result_pid);
+	g_variant_get (result_pid, "(u)", &pid);
+	g_variant_unref (result_pid);
 
-	dbg ("pid = %u", pid);
+	dbg ("sender: %s pid = %u", sender, pid);
 
-	ret = security_server_check_privilege_by_pid(pid, label, perm);
-	if (ret != SECURITY_SERVER_API_SUCCESS)
-		err("access control(%s - %s) denied(%d)", label, perm, ret);
+	ret = security_server_check_privilege_by_pid (pid, label, perm);
+	if (ret != SECURITY_SERVER_API_SUCCESS) {
+		warn ("pid(%u) access (%s - %s) denied(%d)", pid, label, perm, ret);
+	}
 	else
 		result = TRUE;
 
 OUT:
-	/* TODO: return result; */
-	return TRUE;
+	if (result == FALSE) {
+		g_dbus_method_invocation_return_error (invoc,
+				G_DBUS_ERROR,
+				G_DBUS_ERROR_ACCESS_DENIED,
+				"No access rights");
+	}
+	return result;
+}
+
+enum dbus_tapi_sim_slot_id get_sim_slot_id_by_cp_name(char *cp_name)
+{
+	if(g_str_has_suffix(cp_name , "0")){
+		return SIM_SLOT_PRIMARY;
+	} else if (g_str_has_suffix(cp_name , "1")){
+		return SIM_SLOT_SECONDARY;
+	} else if(g_str_has_suffix(cp_name , "2")){
+		return SIM_SLOT_TERTIARY;
+	}
+	return SIM_SLOT_PRIMARY;
+}
+
+gboolean dbus_plugin_util_load_xml(char *docname, char *groupname, void **i_doc, void **i_root_node)
+{
+	xmlDocPtr *doc = (xmlDocPtr *)i_doc;
+	xmlNodePtr *root_node = (xmlNodePtr *)i_root_node;
+
+	dbg("docname:%s, groupname:%s", docname, groupname);
+
+	*doc = xmlParseFile(docname);
+	if (*doc) {
+		*root_node = xmlDocGetRootElement(*doc);
+		if (*root_node) {
+			dbg("*root_node->name:%s", (*root_node)->name);
+			if (0 == xmlStrcmp((*root_node)->name, (const xmlChar *) groupname)) {
+				*root_node = (*root_node)->xmlChildrenNode;
+				return TRUE;
+			} 
+			*root_node = NULL;
+		}
+	}
+	xmlFreeDoc(*doc);
+	*doc = NULL;
+	err("Cannot parse doc(%s)", docname);
+	return FALSE;
+}
+
+void dbus_plugin_util_unload_xml(void **i_doc, void **i_root_node)
+{
+	xmlDocPtr *doc = (xmlDocPtr *)i_doc;
+	xmlNodePtr *root_node = (xmlNodePtr *)i_root_node;
+
+	dbg("unloading XML");
+	if (doc && *doc) {
+		xmlFreeDoc(*doc);
+		*doc = NULL;
+		if (root_node)
+			*root_node = NULL;
+	}
 }

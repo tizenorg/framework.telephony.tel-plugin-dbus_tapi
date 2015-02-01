@@ -1,5 +1,5 @@
 /*
- * tel-plugin-dbus_tapi
+ * tel-plugin-dbus-tapi
  *
  * Copyright (c) 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -48,6 +48,7 @@ typedef union {
 	struct tel_sat_receive_channel_tlv receive_data;
 	struct tel_sat_send_channel_tlv send_data;
 	struct tel_sat_get_channel_status_tlv get_channel_status;
+	struct tel_sat_unsupproted_command_tlv unsupport_cmd;
 } sat_manager_proactive_data;
 
 /**
@@ -57,13 +58,15 @@ struct sat_manager_queue_data {
 	enum tel_sat_proactive_cmd_type cmd_type; /**<Type of Command*/
 	int cmd_id; /**<Command Id*/
 	sat_manager_proactive_data cmd_data; /**<Proactive Cmd Ind Info*/
+	gboolean noti_required; /* for missing SESSION END noti*/
+	char *cp_name; /**<cp_name*/
 };
 
 
 /*================================================================================================*/
 
 // queue handling
-void sat_manager_init_queue(struct custom_data *ctx);
+void sat_manager_init_queue(struct custom_data *ctx, const char *cp_name);
 gboolean sat_manager_remove_cmd_by_id(struct custom_data *ctx, int cmd_id);
 
 //application request handling
@@ -75,17 +78,17 @@ gboolean sat_manager_update_language(struct custom_data *ctx, const char *plugin
 
 //proactive command processing
 GVariant* sat_manager_caching_setup_menu_info(struct custom_data *ctx, const char *plugin_name, struct tel_sat_setup_menu_tlv* setup_menu_tlv);
-GVariant* sat_manager_display_text_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_display_text_tlv* display_text_tlv);
+GVariant* sat_manager_display_text_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_display_text_tlv* display_text_tlv, int decode_error);
 GVariant* sat_manager_select_item_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_select_item_tlv* select_item_tlv);
-GVariant* sat_manager_get_inkey_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_get_inkey_tlv* get_inkey_tlv);
-GVariant* sat_manager_get_input_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_get_input_tlv* get_input_tlv);
+GVariant* sat_manager_get_inkey_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_get_inkey_tlv* get_inkey_tlv, int decode_error);
+GVariant* sat_manager_get_input_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_get_input_tlv* get_input_tlv, int decode_error);
 GVariant* sat_manager_play_tone_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_play_tone_tlv* play_tone_tlv);
 GVariant* sat_manager_send_sms_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_send_sms_tlv* send_sms_tlv);
 GVariant* sat_manager_send_ss_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_send_ss_tlv* send_ss_tlv);
 GVariant* sat_manager_send_ussd_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_send_ussd_tlv* send_ussd_tlv);
 GVariant* sat_manager_setup_call_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_setup_call_tlv* setup_call_tlv);
 GVariant* sat_manager_setup_event_list_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_setup_event_list_tlv *event_list_tlv);
-GVariant* sat_manager_setup_idle_mode_text_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_setup_idle_mode_text_tlv *idle_mode_tlv);
+GVariant* sat_manager_setup_idle_mode_text_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_setup_idle_mode_text_tlv *idle_mode_tlv, int decode_error);
 GVariant* sat_manager_open_channel_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_open_channel_tlv *open_channel_tlv);
 GVariant* sat_manager_close_channel_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_close_channel_tlv *close_channel_tlv);
 GVariant* sat_manager_receive_data_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_receive_channel_tlv *receive_data_tlv);
@@ -97,5 +100,7 @@ GVariant* sat_manager_send_dtmf_noti(struct custom_data *ctx, const char *plugin
 GVariant* sat_manager_launch_browser_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_launch_browser_tlv *launch_browser_tlv);
 GVariant* sat_manager_provide_local_info_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_provide_local_info_tlv *provide_local_info_tlv);
 GVariant* sat_manager_language_notification_noti(struct custom_data *ctx, const char *plugin_name, struct tel_sat_language_notification_tlv *language_notification_tlv);
+gboolean sat_manager_processing_unsupport_proactive_command(struct custom_data *ctx, const char *plugin_name, struct tel_sat_unsupproted_command_tlv *unsupport_tlv);
+gboolean sat_manager_handle_sat_ui_launch_fail(struct custom_data *ctx, const char *plugin_name, struct tnoti_sat_proactive_ind *p_ind);
 
 #endif /* SAT_MANAGER_H_ */

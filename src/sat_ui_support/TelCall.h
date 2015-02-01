@@ -388,7 +388,7 @@ typedef enum {
  * End type used as in parameter in the end call API.
  */
 typedef enum {
-	TAPI_CALL_END = 0,	
+	TAPI_CALL_END = 0,
 	TAPI_CALL_END_ALL,
 	TAPI_CALL_END_ACTIVE_ALL,
 	TAPI_CALL_END_HOLD_ALL,
@@ -468,17 +468,26 @@ typedef enum {
 } TelCallNameMode_t;
 
 /**
- * @enum TelCallSSNocliCause_t
+ * @enum TelCallNocliCause_t
  * This enumeration defines the value for "No Cli cause".
  */
 typedef enum {
-	TAPI_SS_NO_CLI_CAUSE_UNAVAILABLE = 0x00,		/**< Unavailable */
-	TAPI_SS_NO_CLI_CAUSE_REJECTBY_USER = 0x01,		/**< Rejected by User */
-	TAPI_SS_NO_CLI_CAUSE_INTERACTION_OTHERSERVICES = 0x02, /**<  Other services */
-	TAPI_SS_NO_CLI_CAUSE_COINLINE_PAYPHONE = 0x03,	/**< Coin line phone */
-	TAPI_SS_NO_CLI_CAUSE_MAX						/**< maximum usage */
-} TelCallSSNocliCause_t;
+	TAPI_CALL_NO_CLI_CAUSE_NONE = -1,	 /**< None */
+	TAPI_CALL_NO_CLI_CAUSE_UNAVAILABLE = 0x00,		/**< Unavailable */
+	TAPI_CALL_NO_CLI_CAUSE_REJECTBY_USER = 0x01,		/**< Rejected by User */
+	TAPI_CALL_NO_CLI_CAUSE_INTERACTION_OTHERSERVICES = 0x02, /**<  Other services */
+	TAPI_CALL_NO_CLI_CAUSE_COINLINE_PAYPHONE = 0x03,	/**< Coin line phone */
+} TelCallNocliCause_t;
 
+/**
+ * @enum TelCallCliMode_t
+ * This enumeration defines the value for "Cli mode".
+ */
+typedef enum {
+	TAPI_CALL_PRES_AVAIL,		/** <Presentation Allowed */
+	TAPI_CALL_PRES_RESTRICTED,	/**<Presentation Restricted */
+	TAPI_CALL_NUM_UNAVAIL,		/**<Number Not Available */
+}TelCallCliMode_t;
 /**
  * Fwded Ind Type used for MO and Mt from SS Noti Info
  */
@@ -687,7 +696,8 @@ typedef struct {
 	char szCallingPartyNumber[TAPI_CALL_DIALDIGIT_LEN_MAX + 1]; /**< caller number,null terminated ASCII */
 	TelCallingNameInfo_t CallingNameInfo;	/**< Call name info. If there is no information from network, this information will be NULL.*/
 	TelCallRedirectionInfo_t RedirectInfo;	/**< The data for the Call Redirect information. If there is no information from network, this information will be NULL.  */
-	TelCallSSNocliCause_t CliCause;		/**< No of CLI cause */
+	TelCallCliMode_t CliMode;		/**<CLI Mode> */
+	TelCallNocliCause_t CliCause;		/**< No of CLI cause */
 	int fwded;								/**< True or false. If Incoming call is a forwarded call, then true else false.	*/
 	TelCallActiveLine_t ActiveLine;		/**< Current Active Line */
 } TelCallIncomingCallInfo_t;
@@ -697,7 +707,8 @@ typedef struct {
  */
 typedef struct {
 	TelCallMtSSInfo_t type; /* Type of the SS Info presnet. */
-	TelCallSSNocliCause_t no_cli_cause;
+	TelCallCliMode_t CliMode;		/**<CLI Mode> */
+	TelCallNocliCause_t no_cli_cause;
 } TelCallMtSsInfo_t; // not used
 
 typedef struct {
@@ -720,7 +731,8 @@ typedef struct {
  * This structure contains the connected number information.
  */
 typedef struct {
-	TelCallSSNocliCause_t no_cli_cause; /**< Cause when no CLI number. */
+	TelCallCliMode_t CliMode;		/**<CLI Mode> */
+	TelCallNocliCause_t no_cli_cause; /**< Cause when no CLI number. */
 	unsigned char dcs;					/**< DCS */
 	unsigned char number_type;			/**< Number type */
 	TelCallNameMode_t name_mode;		/**< Display mode of the name. */
@@ -951,6 +963,10 @@ typedef struct {
 typedef struct {
 	unsigned int id;
 } TelCallInfoForwardedNoti_t;
+
+typedef struct {
+	unsigned int id;
+} TelCallInfoForwardedCallNoti_t;
 
 typedef struct {
 	unsigned int id;

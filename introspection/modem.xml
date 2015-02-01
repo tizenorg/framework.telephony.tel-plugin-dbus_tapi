@@ -69,6 +69,9 @@
 		<method name="GetSerialNumber">
 			<arg direction="out" type="i" name="result"/>
 			<arg direction="out" type="s" name="sn"/>
+			<arg direction="out" type="s" name="meid"/>
+			<arg direction="out" type="s" name="imei"/>
+			<arg direction="out" type="s" name="imeisv"/>
 		</method>
 
 		<!--
@@ -91,7 +94,7 @@
 
 		<!--
 			Power:
-			@status: Online(0), Offline(1), Error(2)
+			@status: Online(0), Offline(1), Error(2), Unknown(3)
 		-->
 		<signal name="Power">
 			<arg type="i" name="status"/>
@@ -108,7 +111,6 @@
 
 		<!-- power: Power status -->
 		<property name="power" type="i" access="read"/>
-		<property name="imei" type="i" access="read"/>
 
 	</interface>
 

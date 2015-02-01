@@ -1,5 +1,5 @@
 /*
- * tel-plugin-dbus_tapi
+ * tel-plugin-dbus-tapi
  *
  * Copyright (c) 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -22,7 +22,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <glib-object.h>
 
 #include <tcore.h>
 #include <server.h>
@@ -47,8 +46,8 @@ static gboolean on_sap_connect(TelephonySap *sap, GDBusMethodInvocation *invocat
 	TReturn ret;
 	struct treq_sap_req_connect req_conn;
 
-	if (check_access_control(invocation, AC_SAP, "x") == FALSE)
-		return FALSE;
+	if (!check_access_control (invocation, AC_SAP, "x"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
 	memset(&req_conn, 0, sizeof(struct treq_sap_req_connect));
@@ -59,7 +58,8 @@ static gboolean on_sap_connect(TelephonySap *sap, GDBusMethodInvocation *invocat
 	tcore_user_request_set_command(ur, TREQ_SAP_REQ_CONNECT);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if(ret != TCORE_RETURN_SUCCESS) {
-		telephony_sap_complete_connect(sap, invocation, SAP_CONNECTION_STATUS_UNABLE_TO_ESTABLISH, 0);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	 	dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
 		tcore_user_request_unref(ur);
 	}
 
@@ -72,15 +72,16 @@ static gboolean on_sap_disconnect(TelephonySap *sap, GDBusMethodInvocation *invo
 	UserRequest *ur = NULL;
 	TReturn ret;
 
-	if (check_access_control(invocation, AC_SAP, "x") == FALSE)
-		return FALSE;
+	if (!check_access_control (invocation, AC_SAP, "x"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
 
 	tcore_user_request_set_command(ur, TREQ_SAP_REQ_DISCONNECT);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if(ret != TCORE_RETURN_SUCCESS) {
-		telephony_sap_complete_disconnect(sap, invocation, SAP_RESULT_CODE_CARD_NOT_ACCESSIBLE);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	 	dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
 		tcore_user_request_unref(ur);
 	}
 
@@ -93,15 +94,16 @@ static gboolean on_sap_get_status(TelephonySap *sap, GDBusMethodInvocation *invo
 	UserRequest *ur = NULL;
 	TReturn ret;
 
-	if (check_access_control(invocation, AC_SAP, "r") == FALSE)
-		return FALSE;
+	if (!check_access_control (invocation, AC_SAP, "r"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
 
 	tcore_user_request_set_command(ur, TREQ_SAP_REQ_STATUS);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if(ret != TCORE_RETURN_SUCCESS) {
-		telephony_sap_complete_get_status(sap, invocation, SAP_STATUS_UNKNOWN);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	 	dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
 		tcore_user_request_unref(ur);
 	}
 
@@ -114,22 +116,16 @@ static gboolean on_sap_get_atr(TelephonySap *sap, GDBusMethodInvocation *invocat
 	UserRequest *ur = NULL;
 	TReturn ret;
 
-	if (check_access_control(invocation, AC_SAP, "r") == FALSE)
-		return FALSE;
+	if (!check_access_control (invocation, AC_SAP, "r"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
 
 	tcore_user_request_set_command(ur, TREQ_SAP_REQ_ATR);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if(ret != TCORE_RETURN_SUCCESS) {
-		GVariantBuilder *builder = NULL;
-		GVariant * atr_gv = NULL;
-		GVariant *inner_gv = NULL;
-		builder = g_variant_builder_new (G_VARIANT_TYPE ("ay"));
-		inner_gv = g_variant_builder_end(builder);
-		atr_gv = g_variant_new("v", inner_gv);
-
-		telephony_sap_complete_get_atr(sap, invocation,	SAP_RESULT_CODE_CARD_NOT_ACCESSIBLE, atr_gv);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	 	dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
 		tcore_user_request_unref(ur);
 	}
 
@@ -148,10 +144,11 @@ static gboolean on_sap_transfer_apdu(TelephonySap *sap, GDBusMethodInvocation *i
 	guchar rt_i;
 	int i =0;
 
-	if (check_access_control(invocation, AC_SAP, "x") == FALSE)
-		return FALSE;
-
 	dbg("Func Entrance");
+
+	if (!check_access_control (invocation, AC_SAP, "x"))
+		return TRUE;
+
 	memset(&t_apdu, 0, sizeof(struct treq_sap_transfer_apdu));
 
 	inner_gv = g_variant_get_variant(arg_req_apdu);
@@ -174,14 +171,8 @@ static gboolean on_sap_transfer_apdu(TelephonySap *sap, GDBusMethodInvocation *i
 	tcore_user_request_set_command(ur, TREQ_SAP_TRANSFER_APDU);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if(ret != TCORE_RETURN_SUCCESS) {
-		GVariantBuilder *builder = NULL;
-		GVariant * apdu_gv = NULL;
-		GVariant *in_gv = NULL;
-		builder = g_variant_builder_new (G_VARIANT_TYPE ("ay"));
-		in_gv = g_variant_builder_end(builder);
-		apdu_gv = g_variant_new("v", in_gv);
-
-		telephony_sap_complete_transfer_apdu(sap, invocation, SAP_RESULT_CODE_CARD_NOT_ACCESSIBLE, apdu_gv);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	 	dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
 		tcore_user_request_unref(ur);
 	}
 
@@ -196,8 +187,8 @@ static gboolean on_sap_set_protocol(TelephonySap *sap, GDBusMethodInvocation *in
 	TReturn ret;
 	struct treq_sap_set_protocol set_protocol;
 
-	if (check_access_control(invocation, AC_SAP, "w") == FALSE)
-		return FALSE;
+	if (!check_access_control (invocation, AC_SAP, "w"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
 	memset(&set_protocol, 0, sizeof(struct treq_sap_set_protocol));
@@ -208,7 +199,8 @@ static gboolean on_sap_set_protocol(TelephonySap *sap, GDBusMethodInvocation *in
 	tcore_user_request_set_command(ur, TREQ_SAP_SET_PROTOCOL);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if(ret != TCORE_RETURN_SUCCESS) {
-		telephony_sap_complete_set_protocol(sap, invocation, SAP_RESULT_CODE_CARD_NOT_ACCESSIBLE);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	 	dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
 		tcore_user_request_unref(ur);
 	}
 
@@ -223,8 +215,8 @@ static gboolean on_sap_set_power(TelephonySap *sap, GDBusMethodInvocation *invoc
 	TReturn ret;
 	struct treq_sap_set_power set_power;
 
-	if (check_access_control(invocation, AC_SAP, "w") == FALSE)
-		return FALSE;
+	if (!check_access_control (invocation, AC_SAP, "w"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
 	memset(&set_power, 0, sizeof(struct treq_sap_set_power));
@@ -235,7 +227,8 @@ static gboolean on_sap_set_power(TelephonySap *sap, GDBusMethodInvocation *invoc
 	tcore_user_request_set_command(ur, TREQ_SAP_SET_POWER);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if(ret != TCORE_RETURN_SUCCESS) {
-		telephony_sap_complete_set_power(sap, invocation, SAP_RESULT_CODE_CARD_NOT_ACCESSIBLE);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	 	dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
 		tcore_user_request_unref(ur);
 	}
 
@@ -248,15 +241,16 @@ static gboolean on_sap_get_card_reader_status(TelephonySap *sap, GDBusMethodInvo
 	UserRequest *ur = NULL;
 	TReturn ret;
 
-	if (check_access_control(invocation, AC_SAP, "r") == FALSE)
-		return FALSE;
+	if (!check_access_control (invocation, AC_SAP, "r"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
 
 	tcore_user_request_set_command(ur, TREQ_SAP_REQ_CARDREADERSTATUS);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if(ret != TCORE_RETURN_SUCCESS) {
-		telephony_sap_complete_get_card_reader_status(sap, invocation, SAP_RESULT_CODE_CARD_NOT_ACCESSIBLE, 0);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	 	dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
 		tcore_user_request_unref(ur);
 	}
 
@@ -351,19 +345,18 @@ gboolean dbus_plugin_sap_response(struct custom_data *ctx, UserRequest *ur,
 			break;
 
 		case TRESP_SAP_REQ_ATR: {
-			GVariantBuilder *builder = NULL;
+			GVariantBuilder builder;
 			GVariant * atr_gv = NULL;
 			GVariant *inner_gv = NULL;
 			int i =0;
 
 			dbg("dbus comm - TRESP_SAP_REQ_ATR");
-			builder = g_variant_builder_new (G_VARIANT_TYPE ("ay"));
+			g_variant_builder_init(&builder, G_VARIANT_TYPE ("ay"));
 			for(i = 0; i < (int)sap_atr->atr_length; i++) {
 				dbg("sap_atr->atr[%d][0x%02x]", i,sap_atr->atr[i]);
-				g_variant_builder_add (builder, "y", sap_atr->atr[i]);
+				g_variant_builder_add (&builder, "y", sap_atr->atr[i]);
 			}
-			inner_gv = g_variant_builder_end(builder);
-/*			g_variant_builder_unref (builder);*/
+			inner_gv = g_variant_builder_end(&builder);
 			atr_gv = g_variant_new("v", inner_gv);
 
 			telephony_sap_complete_get_atr(dbus_info->interface_object, dbus_info->invocation,
@@ -372,19 +365,18 @@ gboolean dbus_plugin_sap_response(struct custom_data *ctx, UserRequest *ur,
 			break;
 
 		case TRESP_SAP_TRANSFER_APDU: {
-			GVariantBuilder *builder = NULL;
+			GVariantBuilder builder;
 			GVariant * apdu_gv = NULL;
 			GVariant *inner_gv = NULL;
 			int i =0;
 
 			dbg("dbus comm - TRESP_SAP_TRANSFER_APDU");
-			builder = g_variant_builder_new (G_VARIANT_TYPE ("ay"));
+			g_variant_builder_init(&builder, G_VARIANT_TYPE ("ay"));
 			for(i = 0; i < (int)sap_apdu->resp_apdu_length; i++) {
 				dbg("sap_apdu->resp_adpdu[%d][0x%02x]", i,sap_apdu->resp_adpdu[i]);
-				g_variant_builder_add (builder, "y", sap_apdu->resp_adpdu[i]);
+				g_variant_builder_add (&builder, "y", sap_apdu->resp_adpdu[i]);
 			}
-			inner_gv = g_variant_builder_end(builder);
-/*			g_variant_builder_unref (builder);*/
+			inner_gv = g_variant_builder_end(&builder);
 			apdu_gv = g_variant_new("v", inner_gv);
 
 			telephony_sap_complete_transfer_apdu(dbus_info->interface_object, dbus_info->invocation,
@@ -418,7 +410,7 @@ gboolean dbus_plugin_sap_response(struct custom_data *ctx, UserRequest *ur,
 	return TRUE;
 }
 
-gboolean dbus_plugin_sap_notification(struct custom_data *ctx, const char *plugin_name,
+gboolean dbus_plugin_sap_notification(struct custom_data *ctx, CoreObject *source,
 		TelephonyObjectSkeleton *object, enum tcore_notification_command command,
 		unsigned int data_len, const void *data)
 {
@@ -432,9 +424,6 @@ gboolean dbus_plugin_sap_notification(struct custom_data *ctx, const char *plugi
 	}
 
 	sap = telephony_object_peek_sap(TELEPHONY_OBJECT(object));
-	dbg("sap = %p", sap);
-
-	dbg("notification !!! (command = 0x%x, data_len = %d)", command, data_len);
 
 	switch (command) {
 		case TNOTI_SAP_STATUS:

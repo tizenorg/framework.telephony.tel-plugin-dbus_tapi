@@ -17,6 +17,11 @@
 			<arg direction="out" type="i" name="menu_count"/>
 			<arg direction="out" type="b" name="menu_help_info"/>
 			<arg direction="out" type="b" name="menu_updated"/>
+			<!--
+			Enable below tags if SAT icon is supported...
+			<arg direction="out" type="v" name="icon_id"/>
+			<arg direction="out" type="v" name="icon_list"/>
+			-->
 		</method>
 						
 		<method name="SendUiDisplayStatus">
@@ -64,6 +69,11 @@
 			<arg type="i" name="menu_count"/>
 			<arg type="b" name="menu_help_info"/>
 			<arg type="b" name="menu_updated"/>
+			<!--
+			Enable below tags if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			<arg type="v" name="icon_list"/>
+			-->
 		</signal>
 		
 		<signal name="DisplayText">
@@ -74,6 +84,10 @@
 			<arg type="b" name="priority_high"/>
 			<arg type="b" name="user_rsp_required"/>
 			<arg type="b" name="immediately_rsp"/>
+			<!--
+			Enable below tag if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			-->			
 		</signal>
 		
 		<signal name="SelectItem">
@@ -84,6 +98,11 @@
 			<arg type="i" name="default_item_index"/>
 			<arg type="i" name="menu_count"/>
 			<arg type="v" name="menu_item"/>
+			<!--
+			Enable below tags if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			<arg type="v" name="icon_list"/>
+			-->
 		</signal>
 		
 		<signal name="GetInkey">
@@ -95,6 +114,10 @@
 			<arg type="s" name="text"/>
 			<arg type="i" name="text_len"/>
 			<arg type="i" name="duration"/>
+			<!--
+			Enable below tag if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			-->
 		</signal>
 		
 		<signal name="GetInput">
@@ -109,12 +132,20 @@
 			<arg type="i" name="response_len_min"/>
 			<arg type="s" name="default_text"/>
 			<arg type="i" name="default_text_len"/>
+			<!--
+			Enable below tag if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			-->
 		</signal>
 		
 		<signal name="PlayTone">
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
 			<arg type="i" name="text_len"/>
+			<!--
+			Enable below tag if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			-->
 			<arg type="i" name="tone_type"/>
 			<arg type="i" name="duration"/>
 		</signal>
@@ -123,6 +154,10 @@
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
 			<arg type="i" name="text_len"/>
+			<!--
+			Enable below tag if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			-->
 			<arg type="b" name="packing_required"/>
 			<arg type="i" name="ton"/>
 			<arg type="i" name="npi"/>
@@ -137,6 +172,10 @@
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
 			<arg type="i" name="text_len"/>
+			<!--
+			Enable below tag if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			-->
 			<arg type="i" name="ton"/>
 			<arg type="i" name="npi"/>
 			<arg type="s" name="ss_string"/>
@@ -146,6 +185,11 @@
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
 			<arg type="i" name="text_len"/>
+			<!--
+			Enable below tag if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			-->
+			<arg type="y" name="dcs"/>
 			<arg type="s" name="ussd_string"/>
 		</signal>
 
@@ -155,6 +199,10 @@
 			<arg type="i" name="confirm_text_len"/>
 			<arg type="s" name="text"/>
 			<arg type="i" name="text_len"/>
+			<!--
+			Enable below tag if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			-->
 			<arg type="i" name="call_type"/>
 			<arg type="s" name="call_number"/>
 			<arg type="i" name="duration"/>
@@ -169,12 +217,20 @@
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
 			<arg type="i" name="text_len"/>
+			<!--
+			Enable below tag if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			-->
 		</signal>
 				
 		<signal name="OpenChannel">
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
 			<arg type="i" name="text_len"/>
+			<!--
+			Enable below tag if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			-->
 			<arg type="b" name="immediate_link"/>
 			<arg type="b" name="auto_reconnection"/>
 			<arg type="b" name="bg_mode"/>
@@ -192,6 +248,10 @@
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
 			<arg type="i" name="text_len"/>
+			<!--
+			Enable below tag if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			-->
 			<arg type="i" name="channel_id"/>
 		</signal>
 				
@@ -199,6 +259,10 @@
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
 			<arg type="i" name="text_len"/>
+			<!--
+			Enable below tag if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			-->
 			<arg type="i" name="channel_id"/>
 			<arg type="i" name="data_len"/>
 		</signal>
@@ -207,6 +271,10 @@
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
 			<arg type="i" name="text_len"/>
+			<!--
+			Enable below tag if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			-->
 			<arg type="i" name="channel_id"/>
 			<arg type="b" name="send_data_immediately"/>
 			<arg type="v" name="channel_data"/>
@@ -230,6 +298,10 @@
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
 			<arg type="i" name="text_len"/>
+			<!--
+			Enable below tag if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			-->
 			<arg type="s" name="dtmf_str"/>
 			<arg type="i" name="dtmf_str_len"/>
 		</signal>
@@ -244,6 +316,10 @@
 			<arg type="i" name="gateway_proxy_len"/>
 			<arg type="s" name="text"/>
 			<arg type="i" name="text_len"/>
+			<!--
+			Enable below tag if SAT icon is supported...
+			<arg type="v" name="icon_id"/>
+			-->
 		</signal>
 		
 		<signal name="ProvideLocalInfo">
@@ -260,6 +336,30 @@
 			<arg type="i" name="command_type"/>
 		</signal>
 		
+		<signal name="CallControlResult">
+			<arg type="i" name="call_ctrl_result"/>
+			<arg type="s" name="text"/>
+			<arg type="i" name="ton"/>
+			<arg type="i" name="npi"/>
+			<arg type="s" name="call_number"/>
+			<arg type="s" name="ss_string"/>
+			<arg type="s" name="sub_address"/>
+			<arg type="s" name="ccp1"/>
+			<arg type="s" name="ccp2"/>
+			<arg type="i" name="bc_repeat_indicator"/>
+		</signal>
+
+		<signal name="MoSmControlResult">
+                        <arg type="i" name="call_ctrl_result"/>
+                        <arg type="s" name="text"/>
+                        <arg type="i" name="rp_dst_ton"/>
+                        <arg type="i" name="rp_dst_npi"/>
+                        <arg type="s" name="rp_dst_call_number"/>
+			<arg type="i" name="tp_dst_ton"/>
+                        <arg type="i" name="tp_dst_npi"/>
+                        <arg type="s" name="tp_dst_call_number"/>
+                </signal>
+
 	</interface>
 	
 </node>

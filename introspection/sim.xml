@@ -13,8 +13,8 @@
 		<method name="GetIMSI">
 			<arg direction="out" type="s" name="plmn"/>
 			<arg direction="out" type="s" name="msin"/>
-		</method>		
-		
+		</method>
+
 		<method name="GetECC">
 			<arg direction="out" type="aa{sv}" name="ecc_list"/>
 		<!-- dict
@@ -117,6 +117,12 @@
 			<arg direction="out" type="b" name="info_number"/>
 		</method>
 
+		<method name="GetServiceTable">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="sim_type"/>
+			<arg direction="out" type="v" name="service"/>
+		</method>
+
 		<method name="GetMSISDN">
 			<arg direction="out" type="i" name="result"/>
 			<arg direction="out" type="aa{sv}" name="list"/>
@@ -131,7 +137,7 @@
 			<arg direction="out" type="aa{sv}" name="list"/>
 		<!-- dict
 		     "plmn" STRING
-		     "b_umts" BOOLEAN TRUE/FALSE 
+		     "b_umts" BOOLEAN TRUE/FALSE
 		     "b_gsm" BOOLEAN TRUE/FALSE
 		-->
 		</method>
@@ -140,12 +146,18 @@
 			<arg direction="out" type="i" name="result"/>
 			<arg direction="out" type="y" name="display_condition"/>
 			<arg direction="out" type="s" name="spn"/>
-		</method>		
+		</method>
 
 		<method name="GetCphsNetName">
 			<arg direction="out" type="i" name="result"/>
 			<arg direction="out" type="s" name="full_name"/>
 			<arg direction="out" type="s" name="short_name"/>
+		</method>
+
+		<method name="GetGID">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="gid_len"/>
+			<arg direction="out" type="v" name="gid"/>
 		</method>
 
 		<method name="Authentication">
@@ -229,9 +241,25 @@
 			<arg direction="out" type="v" name="atr"/>
 		</method>
 
+		<method name="GetFields">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="aa{sv}" name="list"/>
+		</method>
+
+		<method name="SetPowerstate">
+			<arg direction="in" type="i" name="state"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
 		<signal name="Status">
 			<arg type="i" name="status"/>
 		</signal>
+
+		<signal name="Refreshed">
+			<arg type="i" name="type"/>
+		</signal>
+
+		<property name="cf_state" type="i" access="read"/>
 
 	</interface>
 

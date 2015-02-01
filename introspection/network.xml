@@ -137,7 +137,7 @@
 		<!--
 			SetPreferredPlmn:
 			@mode: add(1), edit(2), delete(3)
-			@index: Operator index in the EFplmnsel of the SIM
+			@ef_index: Operator index in the EFplmnsel of the SIM
 			@act: Access technology. GSM(1), GPRS(2), EGPRS(3), UMTS(4), IS95A(17), IS95B(18), EHRPD(25), LTE(33)
 			@plmn: Plmn
 			@result: Success(0)
@@ -146,7 +146,7 @@
 		-->
 		<method name="SetPreferredPlmn">
 			<arg direction="in" type="i" name="mode"/>
-			<arg direction="in" type="i" name="index"/>
+			<arg direction="in" type="i" name="ef_index"/>
 			<arg direction="in" type="i" name="act"/>
 			<arg direction="in" type="s" name="plmn"/>
 			<arg direction="out" type="i" name="result"/>
@@ -154,7 +154,7 @@
 
 		<!--
 			GetPreferredPlmn:
-			@list: A set of key/dict paris with preferred plmn list. <para>dict items are:</para><itemizedlist><listitem>"plmn" <type>string</type></listitem><listitem>"act" <type>int</type></listitem><listitem>"index" <type>int</type></listitem></itemizedlist>
+			@list: A set of key/dict paris with preferred plmn list. <para>dict items are:</para><itemizedlist><listitem>"plmn" <type>string</type></listitem><listitem>"act" <type>int</type></listitem><listitem>"ef_index" <type>int</type></listitem></itemizedlist>
 			@result: Success(0)
 
 			Get Preferred Plmn list
@@ -182,8 +182,95 @@
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
+		<!--
+			GetNgbrCellInfo:
+			@info: A set of key/dict pairs with serving cell and neighboring cells information.
+			@result: Success(0)
+
+			Get Neighboring Cells information
+		-->
 		<method name="GetNgbrCellInfo">
 			<arg direction="out" type="aa{sv}" name="info"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			SetEmergencyCallbackMode:
+			@mode: Enter(0), Exit(1)
+			@result: Success(0)
+
+			Set Emergency Callback Mode
+		-->
+		<method name="SetEmergencyCallbackMode">
+			<arg direction="in" type="i" name="mode"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			SetRoamingPreference:
+			@roam_pref: Automatic(1), Automatic_A(2), Automatic_B(3), Home Only(4), Roam Only(5)
+			@result: Success(0)
+
+			Set network roaming preference
+		-->
+		<method name="SetRoamingPreference">
+			<arg direction="in" type="i" name="roam_pref"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			GetRoamingPreference:
+			@roam_pref: Automatic(1), Automatic_A(2), Automatic_B(3), Home Only(4), Roam Only(5)
+			@result: Success(0)
+
+			Get network roaming preference
+		-->
+		<method name="GetRoamingPreference">
+			<arg direction="out" type="i" name="roam_pref"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			SetDefaultDataSubscription:
+			@result: Success(0)
+
+			Set Default Data Subscription
+		-->
+		<method name="SetDefaultDataSubscription">
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			GetDefaultDataSubscription:
+			@default_subs: 'default' Data Subscription. SIM 1 (0), SIM 2 (1), Unknown (-1)
+			@result: Success(0)
+
+			Get Default Data Subscription
+		-->
+		<method name="GetDefaultDataSubscription">
+			<arg direction="out" type="i" name="default_subs"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			SetDefaultSubscription:
+			@result: Success(0)
+
+			Set Default Subscription for CS (Voice)
+		-->
+		<method name="SetDefaultSubscription">
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			GetDefaultSubscription:
+			@default_subs: 'default' subscription for CS (Voice). SIM 1 (0), SIM 2 (1), Unknown (-1)
+			@result: Success(0)
+
+			Get 'current' network for Voice service
+		-->
+		<method name="GetDefaultSubscription">
+			<arg direction="out" type="i" name="default_subs"/>
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
@@ -205,16 +292,13 @@
 
 		<!--
 			Info:
-			@rssi: Radio Signal Strength infomation. (0 ~ 6)
-			@battery: Battery information. (0 ~ 5)
+			@sig_dbm: Radio Signal Strength infomation.
 
-			RSSI and Battery information.
+			Signal Strength information (Dbm)
 		-->
-		<signal name="Info">
-			<arg type="i" name="rssi"/>
-			<arg type="i" name="battery"/>
+		<signal name="SignalStrength">
+			<arg type="i" name="dbm"/>
 		</signal>
-
 		<!--
 			Change:
 			@act: Access technology. GSM(1), GPRS(2), EGPRS(3), UMTS(4), IS95A(17), IS95B(18), EHRPD(25), LTE(33)
@@ -226,7 +310,6 @@
 		<signal name="Change">
 			<arg type="i" name="act"/>
 			<arg type="s" name="plmn"/>
-			<arg type="i" name="lac"/>
 		</signal>
 
 		<!--
@@ -285,8 +368,41 @@
 			<arg type="i" name="cell_id"/>
 		</signal>
 
-		<!-- rssi: 0 ~ 5 -->
-		<property name="rssi" type="i" access="read"/>
+		<!--
+			EmergencyCallbackMode:
+			@mode: Emergency Callback Mode
+
+			Network emergency callback mode state
+		-->
+		<signal name="EmergencyCallbackMode">
+			<arg type="i" name="mode"/>
+		</signal>
+
+		<!--
+			DefaultDataSubscription:
+			@default_subs: Default Data Subscription.
+
+			'default' Data Subscription information.
+		-->
+		<signal name="DefaultDataSubscription">
+			<arg type="i" name="default_subs"/>
+		</signal>
+
+		<!--
+			DefaultSubscription:
+			@default_subs: Default Subscription for CS (Voice).
+
+			'default' Subscription information for CS (Voice).
+		-->
+		<signal name="DefaultSubscription">
+			<arg type="i" name="default_subs"/>
+		</signal>
+
+		<!-- sig_dbm : Signal Strength DBM -->
+		<property name="sig_dbm" type="i" access="read"/>
+
+		<!-- sig_level 0 ~ 5 -->
+		<property name="sig_level" type="i" access="read"/>
 
 		<!-- lac: Location Area Code -->
 		<property name="lac" type="i" access="read"/>
@@ -297,28 +413,65 @@
 		<!-- cell_id: Cell ID -->
 		<property name="cell_id" type="i" access="read"/>
 
-		<!-- network_name: Network Name -->
-		<property name="network_name" type="s" access="read"/>
-
-		<!-- service_type: Service Type -->
+		<!--
+			 service_type: Service Type
+			 0=Unknown, 1=No service, 2=Emergency,
+			 3=Search, 4=2G, 5=2.5G,
+			 6=2.5G EDGE, 7=3G, 8=HSDPA, 9=LTE
+		-->
 		<property name="service_type" type="i" access="read"/>
 
-		<!-- network_type: Network Type (0=NONE, 1=HSDPA, 2=HSUPA, 3=HSPA) -->
-		<property name="network_type" type="i" access="read"/>
+		<!--
+			 access_technology
+			 0=Unknown, 1=GSM, 2=GPRS, 3=EGPRS,
+			 4=UMTS, 5=GSM_UTRAN,
+			 17=IS95A, 18=IS95B, 19=CDMA_1X,
+			 20=EVO_REV0, 21=CDMA_1X_EVDO_REV0,
+			 22=EVDO_REVA, 23=CDMA_1X_EVDO_REVA
+			 24=EVDV, 33=LTE,
+			 255=Not specified
+		-->
+		<property name="access_technology" type="i" access="read"/>
 
-		<!-- circuit_status: Circuit domain status -->
+		<!--
+			 ps_type: Packet Service Type
+			 0=NONE, 1=HSDPA, 2=HSUPA, 3=HSPA, 4=HSPA+
+		-->
+		<property name="ps_type" type="i" access="read"/>
+
+		<!--
+			 circuit_status: Circuit domain status
+			 0=NONE, 1=EMERGENCY, 2=FULL, 3=SEARCH
+		-->
 		<property name="circuit_status" type="i" access="read"/>
 
-		<!-- packet_status: Packet domain status -->
+		<!--
+			 packet_status: Packet domain status
+			 0=NONE, 1=EMERGENCY, 2=FULL, 3=SEARCH
+		-->
 		<property name="packet_status" type="i" access="read"/>
 
-		<!-- roaming_status: Roaming status -->
+		<!--
+			 roaming_status: Roaming status
+		-->
 		<property name="roaming_status" type="b" access="read"/>
 
-		<!-- name_priority: Network name, SPN name display priority -->
-		<property name="name_priority" type="i" access="read"/>
+		<!--
+			 name_priority: Network name, SPN name display option
+			 available data: 0=None, 1=SIM(EFspn), 2=Operator, 3=Any(SIM/Network)
+		-->
+		<property name="name_option" type="i" access="read"/>
 
-		<!-- spn_name: SPN name -->
+		<!--
+			 network_name
+			 Network Operator Name
+		-->
+		<property name="network_name" type="s" access="read"/>
+
+		<!--
+			 spn_name
+			 Service Provider Name
+		-->
 		<property name="spn_name" type="s" access="read"/>
 
 	</interface>

@@ -35,6 +35,8 @@
 			<arg direction="in" type="i" name="ss_class"/>
 			<arg direction="in" type="i" name="forward_mode"/>
 			<arg direction="in" type="i" name="forward_no_reply_time"/>
+			<arg direction="in" type="i" name="forward_ton"/>
+			<arg direction="in" type="i" name="forward_npi"/>
 			<arg direction="in" type="s" name="forward_number"/>
 			<arg direction="out" type="aa{sv}" name="forward_list"/>
 			<arg direction="out" type="i" name="result"/>
@@ -44,6 +46,8 @@
 			<arg direction="in" type="i" name="ss_class"/>
 			<arg direction="in" type="i" name="forward_mode"/>
 			<arg direction="in" type="i" name="forward_no_reply_time"/>
+			<arg direction="in" type="i" name="forward_ton"/>
+			<arg direction="in" type="i" name="forward_npi"/>
 			<arg direction="in" type="s" name="forward_number"/>
 			<arg direction="out" type="aa{sv}" name="forward_list"/>
 			<arg direction="out" type="i" name="result"/>
@@ -53,6 +57,8 @@
 			<arg direction="in" type="i" name="ss_class"/>
 			<arg direction="in" type="i" name="forward_mode"/>
 			<arg direction="in" type="i" name="forward_no_reply_time"/>
+			<arg direction="in" type="i" name="forward_ton"/>
+			<arg direction="in" type="i" name="forward_npi"/>
 			<arg direction="in" type="s" name="forward_number"/>
 			<arg direction="out" type="aa{sv}" name="forward_list"/>
 			<arg direction="out" type="i" name="result"/>
@@ -62,6 +68,8 @@
 			<arg direction="in" type="i" name="ss_class"/>
 			<arg direction="in" type="i" name="forward_mode"/>
 			<arg direction="in" type="i" name="forward_no_reply_time"/>
+			<arg direction="in" type="i" name="forward_ton"/>
+			<arg direction="in" type="i" name="forward_npi"/>
 			<arg direction="in" type="s" name="forward_number"/>
 			<arg direction="out" type="aa{sv}" name="forward_list"/>
 			<arg direction="out" type="i" name="result"/>
@@ -92,6 +100,12 @@
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
+		<method name="SetCLIStatus">
+			<arg direction="in" type="i" name="cli_type"/>
+			<arg direction="in" type="i" name="cli_status"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
 		<method name="GetCLIStatus">
 			<arg direction="in" type="i" name="cli_type"/>
 			<arg direction="out" type="i" name="result"/>
@@ -101,20 +115,41 @@
 
 		<method name="SendUSSD">
 			<arg direction="in" type="i" name="ussd_type"/>
+			<arg direction="in" type="i" name="ussd_dcs"/>
 			<arg direction="in" type="i" name="ussd_len"/>
 			<arg direction="in" type="s" name="ussd_string"/>
 			<arg direction="out" type="i" name="result"/>
 			<arg direction="out" type="i" name="ussd_type"/>
 			<arg direction="out" type="i" name="ussd_status"/>
+			<arg direction="out" type="i" name="ussd_dcs"/>
 			<arg direction="out" type="i" name="ussd_len"/>
 			<arg direction="out" type="s" name="ussd_string"/>
 		</method>
 
 		<signal name="NotifyUSSD">
 			<arg type="i" name="ussd_status"/>
+			<arg type="i" name="ussd_dcs"/>
 			<arg type="i" name="ussd_len"/>
 			<arg type="s" name="ussd_string"/>
 		</signal>
+
+		<signal name="NotifyBarring">
+			<arg type="aa{sv}" name="barring_list"/>
+		</signal>
+
+		<signal name="NotifyForwarding">
+			<arg type="aa{sv}" name="forward_list"/>
+		</signal>
+
+		<signal name="NotifyWaiting">
+			<arg type="aa{sv}" name="waiting_list"/>
+		</signal>
+
+		<signal name="NotifySsInfo">
+			<arg type="i" name="err"/>
+			<arg type="i" name="ss_type"/>
+		</signal>
+
 
 		<signal name="ReleaseComplete">
 			<arg type="i" name="data_len"/>

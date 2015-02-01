@@ -27,6 +27,7 @@
 			<arg direction="out" type="i" name="index_max"/>
 			<arg direction="out" type="i" name="number_length_max"/>
 			<arg direction="out" type="i" name="text_length_max"/>
+			<arg direction="out" type="i" name="used_count"/>
 		</method>
 
 		<method name="GetUsimMetaInfo">
@@ -91,6 +92,12 @@
 
 		<signal name="Status">
 			<arg type="i" name="status"/>
+			<arg type="b" name="b_fdn"/>
+			<arg type="b" name="b_adn"/>
+			<arg type="b" name="b_sdn"/>
+			<arg type="b" name="b_usim"/>
+			<arg type="b" name="b_aas"/>
+			<arg type="b" name="b_gas"/>
 		</signal>
 
 	</interface>

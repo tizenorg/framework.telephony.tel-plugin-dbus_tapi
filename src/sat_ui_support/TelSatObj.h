@@ -48,7 +48,7 @@ extern "C"
 #define TAPI_SAT_TEXT_STRING_LEN_MAX					500	 /**<	max length of text string -when the string data is in 7Bit packed format, this length is not enough to support the maximum size so should increase the value to a value > 275 */
 #define TAPI_SAT_SUB_ADDR_LEN_MAX						30	 /**<	max length of sub address 		*/
 #define TAPI_SAT_CCP_DATA_LEN_MAX						30	 /**<	max length of ccp data 		*/
-#define TAPI_SAT_ITEM_TEXT_LEN_MAX						45	 /**<	max length of item text 		*/
+#define TAPI_SAT_ITEM_TEXT_LEN_MAX						255	 /**<	max length of item text 		*/
 #define TAPI_SAT_SMS_TPDU_SMS_DATA_LEN_MAX				175	 /**<	max length of sms tpdu data 		*/
 #define TAPI_SAT_SS_STRING_LEN_MAX						160	 /**<	max length of ss string		*/
 #define TAPI_SAT_USSD_STRING_LEN_MAX					255	 /**<	max length of ussd string 		*/

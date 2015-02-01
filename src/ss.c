@@ -1,5 +1,5 @@
 /*
- * tel-plugin-dbus_tapi
+ * tel-plugin-dbus-tapi
  *
  * Copyright (c) 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <glib.h>
-#include <glib-object.h>
 #include <gio/gio.h>
 
 #include <appsvc.h>
@@ -48,23 +47,28 @@
 
 struct ciss_data_type {
 	int status;
+	int dcs;
 	int length;
 	char data[MAX_SS_USSD_LEN];
 };
 
-static void _launch_ciss(const struct tnoti_ss_ussd *ussd)
+struct ciss_information {
+	int err;
+	int ss_type;
+};
+
+static void _launch_ciss_information(const struct tnoti_ss_information *info)
 {
 	gchar *encoded_data;
-	struct ciss_data_type ciss_data;
+	struct ciss_information ciss_inform;
 
 	bundle *kb = NULL;
 
-	memset(&ciss_data, 0, sizeof(struct ciss_data_type));
-	ciss_data.status = ussd->status;
-	ciss_data.length = strlen(ussd->str);
-	memcpy(ciss_data.data, ussd->str, ciss_data.length);
+	memset(&ciss_inform, 0, sizeof(struct ciss_information));
+	ciss_inform.err = info->err;
+	ciss_inform.ss_type = info->ss_type;
 
-	dbg("launch ciss application by appsvc");
+	dbg("Explicit launch ciss application by appsvc");
 
 	kb = bundle_create();
 	if (!kb) {
@@ -72,14 +76,58 @@ static void _launch_ciss(const struct tnoti_ss_ussd *ussd)
 		return;
 	}
 
-	appsvc_set_operation(kb, "http://tizen.org/appcontrol/operation/ciss");
-	appsvc_set_pkgname(kb, "com.samsung.ciss");
+	appsvc_set_pkgname(kb, "org.tizen.ciss");
+
+	encoded_data = g_base64_encode((guchar *)&ciss_inform, sizeof(struct ciss_information));
+
+	appsvc_add_data(kb, "CISS_LAUNCHING_MODE", "RESP");
+	appsvc_add_data(kb, "KEY_EVENT_TYPE", "200");
+	appsvc_add_data(kb, "KEY_ENCODED_DATA", encoded_data);
+
+	dbg("ciss appsvc run");
+	appsvc_run_service(kb, 0, NULL, NULL);
+
+	bundle_free(kb);
+	g_free(encoded_data);
+
+	return;
+}
+
+
+static void _launch_ciss(const struct tnoti_ss_ussd *ussd, enum dbus_tapi_sim_slot_id slot_id)
+{
+	gchar *encoded_data;
+	struct ciss_data_type ciss_data;
+	char slot_info[2] = {0,};
+
+	bundle *kb = NULL;
+
+	memset(&ciss_data, 0, sizeof(struct ciss_data_type));
+	ciss_data.status = ussd->dcs;
+	ciss_data.status = ussd->status;
+	ciss_data.length = ussd->len;
+	memcpy(ciss_data.data, ussd->str, ciss_data.length);
+
+	snprintf(slot_info, 2, "%d", slot_id);
+	dbg("slot_id : [%s]", slot_info);
+
+	dbg("Explicit launch ciss application by appsvc");
+
+	kb = bundle_create();
+	if (!kb) {
+		warn("bundle_create() failed");
+		return;
+	}
+
+
+	appsvc_set_pkgname(kb, "org.tizen.ciss");
 
 	encoded_data = g_base64_encode((guchar *)&ciss_data, sizeof(struct ciss_data_type));
 
 	appsvc_add_data(kb, "CISS_LAUNCHING_MODE", "RESP");
 	appsvc_add_data(kb, "KEY_EVENT_TYPE", "100");
 	appsvc_add_data(kb, "KEY_ENCODED_DATA", encoded_data);
+	appsvc_add_data(kb, "KEY_SLOT_ID", slot_info);
 
 	dbg("ciss appsvc run");
 	appsvc_run_service(kb, 0, NULL, NULL);
@@ -123,18 +171,9 @@ on_ss_activate_barring (TelephonySs *ss,
 	tcore_user_request_set_command(ur, TREQ_SS_BARRING_ACTIVATE);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS ) {
-		GVariant *result = 0;
-		GVariantBuilder b;
-
-		g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
-		result = g_variant_builder_end(&b);
-
-		telephony_ss_complete_activate_barring(ss, invocation, result, ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
-
-		g_variant_unref( result );
 		tcore_user_request_unref(ur);
-		return FALSE;
 	}
 
 	return TRUE;
@@ -172,18 +211,9 @@ on_ss_deactivate_barring (TelephonySs *ss,
 	tcore_user_request_set_command(ur, TREQ_SS_BARRING_DEACTIVATE);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS ) {
-		GVariant *result = 0;
-		GVariantBuilder b;
-
-		g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
-		result = g_variant_builder_end(&b);
-
-		telephony_ss_complete_deactivate_barring(ss, invocation, result, ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
-
-		g_variant_unref( result );
 		tcore_user_request_unref(ur);
-		return FALSE;
 	}
 
 	return TRUE;
@@ -211,14 +241,10 @@ on_ss_change_barring_password (TelephonySs *ss,
 
 	memcpy(buf, barring_password, MAX_SS_BARRING_PASSWORD_LEN);
 	buf[4] = 0;
-	dbg("req.password_old = [%s]", buf);
 
 	memcpy(buf, barring_password_new, MAX_SS_BARRING_PASSWORD_LEN);
-	dbg("req.password_new = [%s]", buf);
-
 
 	memcpy(buf, barring_password_confirm, MAX_SS_BARRING_PASSWORD_LEN);
-	dbg("req.password_confirm = [%s]", buf);
 
 	ur = MAKE_UR(ctx, ss, invocation);
 
@@ -226,11 +252,9 @@ on_ss_change_barring_password (TelephonySs *ss,
 	tcore_user_request_set_command(ur, TREQ_SS_BARRING_CHANGE_PASSWORD);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS ) {
-		telephony_ss_complete_change_barring_password(ss, invocation, ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
-
 		tcore_user_request_unref(ur);
-		return FALSE;
 	}
 
 	return TRUE;
@@ -261,18 +285,9 @@ on_ss_get_barring_status (TelephonySs *ss,
 	tcore_user_request_set_command(ur, TREQ_SS_BARRING_GET_STATUS);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS ) {
-		GVariant *result = 0;
-		GVariantBuilder b;
-
-		g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
-		result = g_variant_builder_end(&b);
-		
-		telephony_ss_complete_get_barring_status(ss, invocation, result, ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
-
-		g_variant_unref( result );
 		tcore_user_request_unref(ur);
-		return FALSE;
 	}
 
 	return TRUE;
@@ -284,6 +299,8 @@ on_ss_register_forwarding (TelephonySs *ss,
 		gint ss_class,
 		gint forward_mode,
 		gint forward_no_reply_time,
+		gint forward_ton,
+		gint forward_npi,
 		const gchar *forward_number,
 		gpointer user_data)
 {
@@ -292,17 +309,15 @@ on_ss_register_forwarding (TelephonySs *ss,
 	UserRequest *ur = NULL;
 	int ret = 0;
 
-	if (check_access_control(invocation, AC_SS, "w") == FALSE) {
+	if (!check_access_control (invocation, AC_SS, "w")) {
 		GVariant *result = 0;
 		GVariantBuilder b;
 
 		g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
 		result = g_variant_builder_end(&b);
 
-		telephony_ss_complete_register_forwarding(ss, invocation,
-								result, ret);
+		telephony_ss_complete_register_forwarding(ss, invocation, result, ret);
 
-		g_variant_unref(result);
 		return TRUE;
 	}
 
@@ -311,6 +326,8 @@ on_ss_register_forwarding (TelephonySs *ss,
 	req.class = ss_class;
 	req.mode = forward_mode;
 	req.time = forward_no_reply_time;
+	req.ton  = forward_ton;
+	req.npi  = forward_npi;
 	snprintf(req.number, MAX_SS_FORWARDING_NUMBER_LEN, "%s", forward_number);
 
 	dbg("class = %d, mode = %d, time = %d, number = %s",
@@ -322,18 +339,9 @@ on_ss_register_forwarding (TelephonySs *ss,
 	tcore_user_request_set_command(ur, TREQ_SS_FORWARDING_REGISTER);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS ) {
-		GVariant *result = 0;
-		GVariantBuilder b;
-
-		g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
-		result = g_variant_builder_end(&b);
-
-		telephony_ss_complete_register_forwarding(ss, invocation, result, ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
-
-		g_variant_unref( result );
 		tcore_user_request_unref(ur);
-		return FALSE;
 	}
 
 	return TRUE;
@@ -345,6 +353,8 @@ on_ss_deregister_forwarding (TelephonySs *ss,
 		gint ss_class,
 		gint forward_mode,
 		gint forward_no_reply_time,
+		gint forward_ton,
+		gint forward_npi,
 		const gchar *forward_number,
 		gpointer user_data)
 {
@@ -353,21 +363,10 @@ on_ss_deregister_forwarding (TelephonySs *ss,
 	UserRequest *ur = NULL;
 	int ret = 0;
 
-	if (check_access_control(invocation, AC_SS, "w") == FALSE) {
-		GVariant *result = 0;
-		GVariantBuilder b;
-
-		g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
-		result = g_variant_builder_end(&b);
-
-		telephony_ss_complete_register_forwarding(ss, invocation,
-								result, ret);
-
-		dbg("[error]tcore_communicator_dispatch_request() : (0x%x)",
-									ret);
-
-		g_variant_unref(result);
-		return TRUE;
+	if (!check_access_control (invocation, AC_SS, "w")) {
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
+		tcore_user_request_unref(ur);
 	}
 
 	memset(&req, 0, sizeof(struct treq_ss_forwarding));
@@ -375,6 +374,8 @@ on_ss_deregister_forwarding (TelephonySs *ss,
 	req.class = ss_class;
 	req.mode = forward_mode;
 	req.time = forward_no_reply_time;
+	req.ton = forward_ton;
+	req.npi = forward_npi;
 	snprintf(req.number, MAX_SS_FORWARDING_NUMBER_LEN, "%s", forward_number);
 
 	dbg("class = %d, mode = %d, time = %d, number = %s",
@@ -386,18 +387,9 @@ on_ss_deregister_forwarding (TelephonySs *ss,
 	tcore_user_request_set_command(ur, TREQ_SS_FORWARDING_DEREGISTER);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS ) {
-		GVariant *result = 0;
-		GVariantBuilder b;
-
-		g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
-		result = g_variant_builder_end(&b);
-
-		telephony_ss_complete_deregister_forwarding(ss, invocation, result, ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
-
-		g_variant_unref( result );
 		tcore_user_request_unref(ur);
-		return FALSE;
 	}
 
 	return TRUE;
@@ -409,6 +401,8 @@ on_ss_activate_forwarding (TelephonySs *ss,
 		gint ss_class,
 		gint forward_mode,
 		gint forward_no_reply_time,
+		gint forward_ton,
+		gint forward_npi,
 		const gchar *forward_number,
 		gpointer user_data)
 {
@@ -417,20 +411,15 @@ on_ss_activate_forwarding (TelephonySs *ss,
 	UserRequest *ur = NULL;
 	int ret = 0;
 
-	if (check_access_control(invocation, AC_SS, "w") == FALSE) {
+	if (!check_access_control (invocation, AC_SS, "w")) {
 		GVariant *result = 0;
 		GVariantBuilder b;
 
 		g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
 		result = g_variant_builder_end(&b);
 
-		telephony_ss_complete_register_forwarding(ss, invocation,
-								result, ret);
+		telephony_ss_complete_activate_forwarding(ss, invocation, result, ret);
 
-		dbg("[error]tcore_communicator_dispatch_request() : (0x%x)",
-									ret);
-
-		g_variant_unref(result);
 		return TRUE;
 	}
 
@@ -439,6 +428,8 @@ on_ss_activate_forwarding (TelephonySs *ss,
 	req.class = ss_class;
 	req.mode = forward_mode;
 	req.time = forward_no_reply_time;
+	req.ton = forward_ton;
+	req.npi = forward_npi;
 	snprintf(req.number, MAX_SS_FORWARDING_NUMBER_LEN, "%s", forward_number);
 
 	dbg("class = %d, mode = %d, time = %d, number = %s",
@@ -450,18 +441,9 @@ on_ss_activate_forwarding (TelephonySs *ss,
 	tcore_user_request_set_command(ur, TREQ_SS_FORWARDING_ACTIVATE);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS ) {
-		GVariant *result = 0;
-		GVariantBuilder b;
-
-		g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
-		result = g_variant_builder_end(&b);
-
-		telephony_ss_complete_activate_forwarding(ss, invocation, result, ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
-
-		g_variant_unref( result );
 		tcore_user_request_unref(ur);
-		return FALSE;
 	}
 
 	return TRUE;
@@ -473,6 +455,8 @@ on_ss_deactivate_forwarding (TelephonySs *ss,
 		gint ss_class,
 		gint forward_mode,
 		gint forward_no_reply_time,
+		gint forward_ton,
+		gint forward_npi,
 		const gchar *forward_number,
 		gpointer user_data)
 {
@@ -481,20 +465,15 @@ on_ss_deactivate_forwarding (TelephonySs *ss,
 	UserRequest *ur = NULL;
 	int ret = 0;
 
-	if (check_access_control(invocation, AC_SS, "w") == FALSE) {
+	if (!check_access_control (invocation, AC_SS, "w")) {
 		GVariant *result = 0;
 		GVariantBuilder b;
 
 		g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
 		result = g_variant_builder_end(&b);
 
-		telephony_ss_complete_register_forwarding(ss, invocation,
-								result, ret);
+		telephony_ss_complete_deactivate_forwarding(ss, invocation, result, ret);
 
-		dbg("[error]tcore_communicator_dispatch_request() : (0x%x)",
-									ret);
-
-		g_variant_unref(result);
 		return TRUE;
 	}
 
@@ -503,6 +482,8 @@ on_ss_deactivate_forwarding (TelephonySs *ss,
 	req.class = ss_class;
 	req.mode = forward_mode;
 	req.time = forward_no_reply_time;
+	req.ton = forward_ton;
+	req.npi = forward_npi;
 	snprintf(req.number, MAX_SS_FORWARDING_NUMBER_LEN, "%s", forward_number);
 
 	dbg("class = %d, mode = %d, time = %d, number = %s",
@@ -514,18 +495,9 @@ on_ss_deactivate_forwarding (TelephonySs *ss,
 	tcore_user_request_set_command(ur, TREQ_SS_FORWARDING_DEACTIVATE);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS ) {
-		GVariant *result = 0;
-		GVariantBuilder b;
-
-		g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
-		result = g_variant_builder_end(&b);
-
-		telephony_ss_complete_deactivate_forwarding(ss, invocation, result, ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
-
-		g_variant_unref( result );
 		tcore_user_request_unref(ur);
-		return FALSE;
 	}
 
 	return TRUE;
@@ -543,20 +515,15 @@ on_ss_get_forwarding_status (TelephonySs *ss,
 	UserRequest *ur = NULL;
 	int ret = 0;
 
-	if (check_access_control(invocation, AC_SS, "w") == FALSE) {
+	if (!check_access_control (invocation, AC_SS, "r")) {
 		GVariant *result = 0;
 		GVariantBuilder b;
 
 		g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
 		result = g_variant_builder_end(&b);
 
-		telephony_ss_complete_register_forwarding(ss, invocation,
-								result, ret);
+		telephony_ss_complete_get_forwarding_status(ss, invocation, result, ret);
 
-		dbg("[error]tcore_communicator_dispatch_request() : (0x%x)",
-									ret);
-
-		g_variant_unref(result);
 		return TRUE;
 	}
 
@@ -574,18 +541,9 @@ on_ss_get_forwarding_status (TelephonySs *ss,
 	tcore_user_request_set_command(ur, TREQ_SS_FORWARDING_GET_STATUS);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS ) {
-		GVariant *result = 0;
-		GVariantBuilder b;
-
-		g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
-		result = g_variant_builder_end(&b);
-
-		telephony_ss_complete_get_forwarding_status(ss, invocation, result, ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
-
-		g_variant_unref( result );
 		tcore_user_request_unref(ur);
-		return FALSE;
 	}
 
 	return TRUE;
@@ -614,18 +572,9 @@ on_ss_activate_waiting (TelephonySs *ss,
 	tcore_user_request_set_command(ur, TREQ_SS_WAITING_ACTIVATE);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS ) {
-		GVariant *result = 0;
-		GVariantBuilder b;
-
-		g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
-		result = g_variant_builder_end(&b);
-
-		telephony_ss_complete_activate_waiting(ss, invocation, result, ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
-
-		g_variant_unref( result );
 		tcore_user_request_unref(ur);
-		return FALSE;
 	}
 
 	return TRUE;
@@ -654,18 +603,9 @@ on_ss_deactivate_waiting (TelephonySs *ss,
 	tcore_user_request_set_command(ur, TREQ_SS_WAITING_DEACTIVATE);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS ) {
-		GVariant *result = 0;
-		GVariantBuilder b;
-
-		g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
-		result = g_variant_builder_end(&b);
-
-		telephony_ss_complete_deactivate_waiting(ss, invocation, result, ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
-
-		g_variant_unref( result );
 		tcore_user_request_unref(ur);
-		return FALSE;
 	}
 
 	return TRUE;
@@ -694,22 +634,47 @@ on_ss_get_waiting_status (TelephonySs *ss,
 	tcore_user_request_set_command(ur, TREQ_SS_WAITING_GET_STATUS);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS ) {
-		GVariant *result = 0;
-		GVariantBuilder b;
-
-		g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
-		result = g_variant_builder_end(&b);
-
-		telephony_ss_complete_get_waiting_status(ss, invocation, result, ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
-
-		g_variant_unref( result );
 		tcore_user_request_unref(ur);
-		return FALSE;
 	}
 
 	return TRUE;
 }
+
+static gboolean
+on_ss_set_cli_status (TelephonySs *ss,
+		GDBusMethodInvocation *invocation,
+		gint cli_type,
+		gint cli_status,
+		gpointer user_data)
+{
+	struct treq_ss_set_cli req;
+	struct custom_data *ctx = user_data;
+	UserRequest *ur = NULL;
+	int ret = 0;
+
+	memset(&req, 0, sizeof(struct treq_ss_set_cli));
+
+	req.type = cli_type;
+	req.status = cli_status;
+
+	dbg("type = %d, status = %d", req.type, req.status);
+
+	ur = MAKE_UR(ctx, ss, invocation);
+
+	tcore_user_request_set_data(ur, sizeof(struct treq_ss_set_cli), &req);
+	tcore_user_request_set_command(ur, TREQ_SS_CLI_SET_STATUS);
+	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
+	if (ret != TCORE_RETURN_SUCCESS ) {
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
+		tcore_user_request_unref(ur);
+	}
+
+	return TRUE;
+}
+
 
 static gboolean
 on_ss_get_cli_status (TelephonySs *ss,
@@ -734,11 +699,9 @@ on_ss_get_cli_status (TelephonySs *ss,
 	tcore_user_request_set_command(ur, TREQ_SS_CLI_GET_STATUS);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS ) {
-		telephony_ss_complete_get_clistatus(ss, invocation, ret, -1, -1);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
-
 		tcore_user_request_unref(ur);
-		return FALSE;
 	}
 
 	return TRUE;
@@ -748,6 +711,7 @@ static gboolean
 on_ss_send_ussd (TelephonySs *ss,
 		GDBusMethodInvocation *invocation,
 		gint ussd_type,
+		gint ussd_dcs,
 		gint ussd_len,
 		const gchar *ussd_string,
 		gpointer user_data)
@@ -760,9 +724,12 @@ on_ss_send_ussd (TelephonySs *ss,
 	memset(&req, 0, sizeof(struct treq_ss_ussd));
 
 	req.type = ussd_type;
-	snprintf(req.str, MAX_SS_USSD_LEN, "%s", ussd_string);
+	req.dcs = (unsigned char)ussd_dcs;
+	req.len = (unsigned short)ussd_len;
 
-	dbg("type = %d, string = %s", req.type, req.str);
+	snprintf((char*)req.str, MAX_SS_USSD_LEN, "%s", ussd_string);
+
+	dbg("[ check ] type = %d, dcs = %d, len = %d, string = %s", req.type, req.dcs, req.len, req.str);
 
 	ur = MAKE_UR(ctx, ss, invocation);
 
@@ -770,11 +737,9 @@ on_ss_send_ussd (TelephonySs *ss,
 	tcore_user_request_set_command(ur, TREQ_SS_SEND_USSD);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS ) {
-		telephony_ss_complete_send_ussd(ss, invocation, ret, -1, -1, -1, 0);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
-
 		tcore_user_request_unref(ur);
-		return FALSE;
 	}
 
 	return TRUE;
@@ -787,8 +752,6 @@ gboolean dbus_plugin_setup_ss_interface(TelephonyObjectSkeleton *object, struct 
 	ss = telephony_ss_skeleton_new();
 	telephony_object_skeleton_set_ss(object, ss);
 	g_object_unref(ss);
-
-	dbg("ss = %p", ss);
 
 	g_signal_connect (ss,
 			"handle-activate-barring",
@@ -851,6 +814,11 @@ gboolean dbus_plugin_setup_ss_interface(TelephonyObjectSkeleton *object, struct 
 			ctx);
 
 	g_signal_connect (ss,
+			"handle-set-clistatus",
+			G_CALLBACK (on_ss_set_cli_status),
+			ctx);
+
+	g_signal_connect (ss,
 			"handle-get-clistatus",
 			G_CALLBACK (on_ss_get_cli_status),
 			ctx);
@@ -869,13 +837,17 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 	GVariantBuilder b;
 	int i = 0;
 
+	if ( !data ) {
+		err("response data : 0");
+		return FALSE;
+	}
+
 	switch (command) {
 		case TRESP_SS_BARRING_ACTIVATE: {
 
 			const struct tresp_ss_barring *resp = data;
 
-			dbg("receive TRESP_SS_BARRING_ACTIVATE");
-			dbg("resp->err = 0x%x", resp->err);
+			dbg("receive TRESP_SS_BARRING_ACTIVATE (err[%d])", resp->err);
 
 			g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
 
@@ -891,16 +863,13 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 
 			telephony_ss_complete_activate_barring(dbus_info->interface_object, dbus_info->invocation, result, resp->err);
 
-			g_variant_unref(result);
-
 		} break;
 
 		case TRESP_SS_BARRING_DEACTIVATE: {
 
 			const struct tresp_ss_barring *resp = data;
 
-			dbg("receive TRESP_SS_BARRING_DEACTIVATE");
-			dbg("resp->err = 0x%x", resp->err);
+			dbg("receive TRESP_SS_BARRING_DEACTIVATE (err[%d])", resp->err);
 
 			g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
 
@@ -916,16 +885,13 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 
 			telephony_ss_complete_deactivate_barring(dbus_info->interface_object, dbus_info->invocation, result, resp->err);
 
-			g_variant_unref(result);
-
 		} break;
 
 		case TRESP_SS_BARRING_CHANGE_PASSWORD: {
 
 			const struct tresp_ss_general *resp = data;
 
-			dbg("receive TRESP_SS_BARRING_CHANGE_PASSWORD");
-			dbg("resp->err = 0x%x", resp->err);
+			dbg("receive TRESP_SS_BARRING_CHANGE_PASSWORD (err[%d])", resp->err);
 
 			telephony_ss_complete_change_barring_password(dbus_info->interface_object, dbus_info->invocation, resp->err);
 
@@ -935,8 +901,7 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 
 			const struct tresp_ss_barring *resp = data;
 
-			dbg("receive TRESP_SS_BARRING_GET_STATUS");
-			dbg("resp->err = 0x%x", resp->err);
+			dbg("receive TRESP_SS_BARRING_GET_STATUS (err[%d])", resp->err);
 
 			g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
 
@@ -952,15 +917,12 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 
 			telephony_ss_complete_get_barring_status(dbus_info->interface_object, dbus_info->invocation, result, resp->err);
 
-			g_variant_unref(result);
-
 		} break;
 
 		case TRESP_SS_FORWARDING_ACTIVATE: {
 			const struct tresp_ss_forwarding *resp = data;
 
-			dbg("receive TRESP_SS_FORWARDING_ACTIVATE");
-			dbg("resp->err = 0x%x", resp->err);
+			dbg("receive TRESP_SS_FORWARDING_ACTIVATE (err[%d])", resp->err);
 
 			g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
 
@@ -969,8 +931,10 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 				g_variant_builder_add(&b, "{sv}", "ss_class", g_variant_new_int32( resp->record[i].class ));
 				g_variant_builder_add(&b, "{sv}", "ss_status", g_variant_new_int32( resp->record[i].status ));
 				g_variant_builder_add(&b, "{sv}", "forwarding_mode", g_variant_new_int32( resp->record[i].mode ));
-				g_variant_builder_add(&b, "{sv}", "no_reply_time", g_variant_new_int32( resp->record[i].time ));
 				g_variant_builder_add(&b, "{sv}", "number_present", g_variant_new_int32( resp->record[i].number_present ));
+				g_variant_builder_add(&b, "{sv}", "no_reply_time", g_variant_new_int32( resp->record[i].time ));
+				g_variant_builder_add(&b, "{sv}", "type_of_number", g_variant_new_int32( resp->record[i].ton ));
+				g_variant_builder_add(&b, "{sv}", "numbering_plan_identity", g_variant_new_int32( resp->record[i].npi ));
 				g_variant_builder_add(&b, "{sv}", "forwarding_number", g_variant_new_string( resp->record[i].number ));
 				g_variant_builder_close(&b);
 			}
@@ -979,16 +943,13 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 
 			telephony_ss_complete_activate_forwarding(dbus_info->interface_object, dbus_info->invocation, result, resp->err);
 
-			g_variant_unref(result);
-
 		} break;
 
 		case TRESP_SS_FORWARDING_DEACTIVATE: {
 
 			const struct tresp_ss_forwarding *resp = data;
 
-			dbg("receive TRESP_SS_FORWARDING_DEACTIVATE");
-			dbg("resp->err = 0x%x", resp->err);
+			dbg("receive TRESP_SS_FORWARDING_DEACTIVATE (err[%d])", resp->err);
 
 			g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
 
@@ -997,8 +958,10 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 				g_variant_builder_add(&b, "{sv}", "ss_class", g_variant_new_int32( resp->record[i].class ));
 				g_variant_builder_add(&b, "{sv}", "ss_status", g_variant_new_int32( resp->record[i].status ));
 				g_variant_builder_add(&b, "{sv}", "forwarding_mode", g_variant_new_int32( resp->record[i].mode ));
-				g_variant_builder_add(&b, "{sv}", "no_reply_time", g_variant_new_int32( resp->record[i].time ));
 				g_variant_builder_add(&b, "{sv}", "number_present", g_variant_new_int32( resp->record[i].number_present ));
+				g_variant_builder_add(&b, "{sv}", "no_reply_time", g_variant_new_int32( resp->record[i].time ));
+				g_variant_builder_add(&b, "{sv}", "type_of_number", g_variant_new_int32( resp->record[i].ton ));
+				g_variant_builder_add(&b, "{sv}", "numbering_plan_identity", g_variant_new_int32( resp->record[i].npi ));
 				g_variant_builder_add(&b, "{sv}", "forwarding_number", g_variant_new_string( resp->record[i].number ));
 				g_variant_builder_close(&b);
 			}
@@ -1007,16 +970,13 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 
 			telephony_ss_complete_deactivate_forwarding(dbus_info->interface_object, dbus_info->invocation, result, resp->err);
 
-			g_variant_unref(result);
-
 		} break;
 
 		case TRESP_SS_FORWARDING_REGISTER: {
 
 			const struct tresp_ss_forwarding *resp = data;
 
-			dbg("receive TRESP_SS_FORWARDING_REGISTER");
-			dbg("resp->err = 0x%x", resp->err);
+			dbg("receive TRESP_SS_FORWARDING_REGISTER (err[%d])", resp->err);
 
 			g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
 
@@ -1025,8 +985,10 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 				g_variant_builder_add(&b, "{sv}", "ss_class", g_variant_new_int32( resp->record[i].class ));
 				g_variant_builder_add(&b, "{sv}", "ss_status", g_variant_new_int32( resp->record[i].status ));
 				g_variant_builder_add(&b, "{sv}", "forwarding_mode", g_variant_new_int32( resp->record[i].mode ));
-				g_variant_builder_add(&b, "{sv}", "no_reply_time", g_variant_new_int32( resp->record[i].time ));
 				g_variant_builder_add(&b, "{sv}", "number_present", g_variant_new_int32( resp->record[i].number_present ));
+				g_variant_builder_add(&b, "{sv}", "no_reply_time", g_variant_new_int32( resp->record[i].time ));
+				g_variant_builder_add(&b, "{sv}", "type_of_number", g_variant_new_int32( resp->record[i].ton ));
+				g_variant_builder_add(&b, "{sv}", "numbering_plan_identity", g_variant_new_int32( resp->record[i].npi ));
 				g_variant_builder_add(&b, "{sv}", "forwarding_number", g_variant_new_string( resp->record[i].number ));
 				g_variant_builder_close(&b);
 			}
@@ -1035,16 +997,13 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 
 			telephony_ss_complete_register_forwarding(dbus_info->interface_object, dbus_info->invocation, result, resp->err);
 
-			g_variant_unref(result);
-
 	    } break;
 
 		case TRESP_SS_FORWARDING_DEREGISTER: {
 
 			const struct tresp_ss_forwarding *resp = data;
 
-			dbg("receive TRESP_SS_FORWARDING_DEREGISTER");
-			dbg("resp->err = 0x%x", resp->err);
+			dbg("receive TRESP_SS_FORWARDING_DEREGISTER (err[%d])", resp->err);
 
 			g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
 
@@ -1053,8 +1012,10 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 				g_variant_builder_add(&b, "{sv}", "ss_class", g_variant_new_int32( resp->record[i].class ));
 				g_variant_builder_add(&b, "{sv}", "ss_status", g_variant_new_int32( resp->record[i].status ));
 				g_variant_builder_add(&b, "{sv}", "forwarding_mode", g_variant_new_int32( resp->record[i].mode ));
-				g_variant_builder_add(&b, "{sv}", "no_reply_time", g_variant_new_int32( resp->record[i].time ));
 				g_variant_builder_add(&b, "{sv}", "number_present", g_variant_new_int32( resp->record[i].number_present ));
+				g_variant_builder_add(&b, "{sv}", "no_reply_time", g_variant_new_int32( resp->record[i].time ));
+				g_variant_builder_add(&b, "{sv}", "type_of_number", g_variant_new_int32( resp->record[i].ton ));
+				g_variant_builder_add(&b, "{sv}", "numbering_plan_identity", g_variant_new_int32( resp->record[i].npi ));
 				g_variant_builder_add(&b, "{sv}", "forwarding_number", g_variant_new_string( resp->record[i].number ));
 				g_variant_builder_close(&b);
 			}
@@ -1063,16 +1024,13 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 
 			telephony_ss_complete_deregister_forwarding(dbus_info->interface_object, dbus_info->invocation, result, resp->err);
 
-			g_variant_unref(result);
-
 		} break;
 
 		case TRESP_SS_FORWARDING_GET_STATUS: {
 
 			const struct tresp_ss_forwarding *resp = data;
 
-			dbg("receive TRESP_SS_FORWARDING_GET_STATUS");
-			dbg("resp->err = 0x%x", resp->err);
+			dbg("receive TRESP_SS_FORWARDING_GET_STATUS (err[%d])", resp->err);
 
 			g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
 
@@ -1081,8 +1039,10 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 				g_variant_builder_add(&b, "{sv}", "ss_class", g_variant_new_int32( resp->record[i].class ));
 				g_variant_builder_add(&b, "{sv}", "ss_status", g_variant_new_int32( resp->record[i].status ));
 				g_variant_builder_add(&b, "{sv}", "forwarding_mode", g_variant_new_int32( resp->record[i].mode ));
-				g_variant_builder_add(&b, "{sv}", "no_reply_time", g_variant_new_int32( resp->record[i].time ));
 				g_variant_builder_add(&b, "{sv}", "number_present", g_variant_new_int32( resp->record[i].number_present ));
+				g_variant_builder_add(&b, "{sv}", "no_reply_time", g_variant_new_int32( resp->record[i].time ));
+				g_variant_builder_add(&b, "{sv}", "type_of_number", g_variant_new_int32( resp->record[i].ton ));
+				g_variant_builder_add(&b, "{sv}", "numbering_plan_identity", g_variant_new_int32( resp->record[i].npi ));
 				g_variant_builder_add(&b, "{sv}", "forwarding_number", g_variant_new_string( resp->record[i].number ));
 				g_variant_builder_close(&b);
 			}
@@ -1091,16 +1051,13 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 
 			telephony_ss_complete_get_forwarding_status(dbus_info->interface_object, dbus_info->invocation, result, resp->err);
 
-			g_variant_unref(result);
-
 		} break;
 
 		case TRESP_SS_WAITING_ACTIVATE: {
 
 			const struct tresp_ss_waiting *resp = data;
 
-			dbg("receive TRESP_SS_WAITING_ACTIVATE");
-			dbg("resp->err = 0x%x", resp->err);
+			dbg("receive TRESP_SS_WAITING_ACTIVATE (err[%d])", resp->err);
 
 			g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
 
@@ -1115,16 +1072,13 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 
 			telephony_ss_complete_activate_waiting(dbus_info->interface_object, dbus_info->invocation, result, resp->err);
 
-			g_variant_unref(result);
-
 		} break;
 
 		case TRESP_SS_WAITING_DEACTIVATE: {
 
 			const struct tresp_ss_waiting *resp = data;
 
-			dbg("receive TRESP_SS_WAITING_DEACTIVATE");
-			dbg("resp->err = 0x%x", resp->err);
+			dbg("receive TRESP_SS_WAITING_DEACTIVATE (err[%d])", resp->err);
 
 			g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
 
@@ -1139,16 +1093,13 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 
 			telephony_ss_complete_deactivate_waiting(dbus_info->interface_object, dbus_info->invocation, result, resp->err);
 
-			g_variant_unref(result);
-
 		} break;
 
 		case TRESP_SS_WAITING_GET_STATUS: {
 
 			const struct tresp_ss_waiting *resp = data;
 
-			dbg("receive TRESP_SS_WAITING_GET_STATUS");
-			dbg("resp->err = 0x%x", resp->err);
+			dbg("receive TRESP_SS_WAITING_GET_STATUS (err[%d])", resp->err);
 
 			g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
 
@@ -1163,7 +1114,15 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 
 			telephony_ss_complete_get_waiting_status(dbus_info->interface_object, dbus_info->invocation, result, resp->err);
 
-			g_variant_unref(result);
+		} break;
+
+		case TRESP_SS_CLI_SET_STATUS: {
+
+			const struct tresp_ss_set_cli *resp = data;
+
+			dbg("receive TRESP_SS_CLI_SET_STATUS (err[%d])", resp->err);
+
+			telephony_ss_complete_set_clistatus(dbus_info->interface_object, dbus_info->invocation, resp->err);
 
 		} break;
 
@@ -1171,8 +1130,7 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 
 			const struct tresp_ss_cli *resp = data;
 
-			dbg("receive TRESP_SS_CLI_GET_STATUS");
-			dbg("resp->err = 0x%x", resp->err);
+			dbg("receive TRESP_SS_CLI_GET_STATUS (err[%d])", resp->err);
 
 			telephony_ss_complete_get_clistatus(dbus_info->interface_object, dbus_info->invocation, resp->err, resp->type, resp->status);
 
@@ -1182,20 +1140,9 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 
 			const struct tresp_ss_ussd *resp = data;
 
-			dbg("receive TRESP_SS_SEND_USSD");
-			dbg("resp->err = 0x%x", resp->err);
-
-			if ( resp->err ) {
-				dbg("USSD Request is failed");
-				telephony_ss_complete_send_ussd(dbus_info->interface_object, dbus_info->invocation, resp->err, resp->type, resp->status, -1, 0);
-
-			} else {
-				int ussd_len = strlen(resp->str);
-				dbg("USSD Request is Success");
-				dbg("USSD : %s (%d)", resp->str, ussd_len);
-				telephony_ss_complete_send_ussd(dbus_info->interface_object, dbus_info->invocation, resp->err, resp->type, resp->status, ussd_len, resp->str);
-
-			}
+			dbg("receive TRESP_SS_SEND_USSD (err[%d])", resp->err);
+			dbg("USSD : %s (len : %d, type : 0x%x, status : 0x%x, dcs : 0x%x)", resp->str, resp->len, resp->type, resp->status, resp->dcs);
+			telephony_ss_complete_send_ussd(dbus_info->interface_object, dbus_info->invocation, resp->err, resp->type, resp->status, resp->dcs, resp->len, (char*)resp->str);
 
 		} break;
 
@@ -1207,46 +1154,131 @@ gboolean dbus_plugin_ss_response(struct custom_data *ctx, UserRequest *ur, struc
 	return TRUE;
 }
 
-gboolean dbus_plugin_ss_notification(struct custom_data *ctx, const char *plugin_name, TelephonyObjectSkeleton *object, enum tcore_notification_command command, unsigned int data_len, const void *data)
+gboolean dbus_plugin_ss_notification(struct custom_data *ctx, CoreObject *source, TelephonyObjectSkeleton *object, enum tcore_notification_command command, unsigned int data_len, const void *data)
 {
-	TelephonySs *ss;
+	TelephonySs *ss = 0;
+	GVariant *result = 0;
+	GVariantBuilder b;
+	int i = 0;
+	char *cp_name= NULL;
 
 	if (!object) {
 		dbg("object is NULL");
 		return FALSE;
 	}
+	cp_name =  (char*)tcore_server_get_cp_name_by_plugin(tcore_object_ref_plugin(source));
 
 	ss = telephony_object_peek_ss(TELEPHONY_OBJECT(object));
-	dbg("ss = %p", ss);
 
 	switch (command) {
 		case TNOTI_SS_USSD: {
 			const struct tnoti_ss_ussd *ussd = data;
+			enum dbus_tapi_sim_slot_id slot_id;
+
+			slot_id = get_sim_slot_id_by_cp_name(cp_name);
+			dbg("slot_id: [%d]", slot_id);
+
 			telephony_ss_emit_notify_ussd(ss,
 					ussd->status,
-					strlen(ussd->str),
-					ussd->str);
-			_launch_ciss(ussd);
+					ussd->dcs,
+					ussd->len,
+					(char*)ussd->str);
+			_launch_ciss(ussd, slot_id);
 		} break;
+
+		case TNOTI_SS_FORWARDING_STATUS: {
+			const struct tnoti_ss_forwarding_status *fwrd = data;
+
+			g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
+
+			for (i=0; i<fwrd->record_num; i++) {
+				g_variant_builder_open(&b, G_VARIANT_TYPE("a{sv}"));
+				g_variant_builder_add(&b, "{sv}", "ss_class", g_variant_new_int32( fwrd->record[i].class ));
+				g_variant_builder_add(&b, "{sv}", "ss_status", g_variant_new_int32( fwrd->record[i].status ));
+				g_variant_builder_add(&b, "{sv}", "forwarding_mode", g_variant_new_int32( fwrd->record[i].mode ));
+				g_variant_builder_add(&b, "{sv}", "number_present", g_variant_new_int32( fwrd->record[i].number_present ));
+				g_variant_builder_add(&b, "{sv}", "no_reply_time", g_variant_new_int32( fwrd->record[i].time ));
+				g_variant_builder_add(&b, "{sv}", "type_of_number", g_variant_new_int32( fwrd->record[i].ton ));
+				g_variant_builder_add(&b, "{sv}", "numbering_plan_identity", g_variant_new_int32( fwrd->record[i].npi ));
+				g_variant_builder_add(&b, "{sv}", "forwarding_number", g_variant_new_string( fwrd->record[i].number ));
+				g_variant_builder_close(&b);
+			}
+
+			result = g_variant_builder_end(&b);
+			telephony_ss_emit_notify_forwarding(ss, result);
+
+		} break;
+
+		case TNOTI_SS_BARRING_STATUS: {
+
+			const struct tnoti_ss_barring_status *barr = data;
+
+			g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
+
+			for (i=0; i<barr->record_num; i++) {
+				g_variant_builder_open(&b, G_VARIANT_TYPE("a{sv}"));
+				g_variant_builder_add(&b, "{sv}", "ss_class", g_variant_new_int32( barr->record[i].class ));
+				g_variant_builder_add(&b, "{sv}", "ss_status", g_variant_new_int32( barr->record[i].status ));
+				g_variant_builder_add(&b, "{sv}", "barring_mode", g_variant_new_int32( barr->record[i].mode ));
+				g_variant_builder_close(&b);
+			}
+
+			result = g_variant_builder_end(&b);
+			telephony_ss_emit_notify_barring(ss, result);
+
+		} break;
+
+		case TNOTI_SS_WAITING_STATUS: {
+			const struct tnoti_ss_waiting_status *wait = data;
+
+			g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
+
+			for (i=0; i<wait->record_num; i++) {
+				g_variant_builder_open(&b, G_VARIANT_TYPE("a{sv}"));
+				g_variant_builder_add(&b, "{sv}", "ss_class", g_variant_new_int32( wait->record[i].class ));
+				g_variant_builder_add(&b, "{sv}", "ss_status", g_variant_new_int32( wait->record[i].status ));
+				g_variant_builder_close(&b);
+			}
+
+			result = g_variant_builder_end(&b);
+			telephony_ss_emit_notify_waiting(ss, result);
+
+		} break;
+
 		case TNOTI_SS_RELEASE_COMPLETE: {
 			int i = 0;
-			GVariantBuilder *builder = 0;
-			GVariant *msg_data = 0, *packet = 0;
+			GVariantBuilder builder;
+			GVariant *msg_data = 0, *packet = NULL;
 			const struct tnoti_ss_release_complete *msg = data;
+			if (msg) {
+				g_variant_builder_init(&builder, G_VARIANT_TYPE ("ay"));
+				for (i = 0; i < msg->data_len; i++) {
+					g_variant_builder_add(&builder, "y", msg->data[i]);
+				}
+				msg_data = g_variant_builder_end(&builder);
+				packet = g_variant_new("v", msg_data);
 
-			builder = g_variant_builder_new(G_VARIANT_TYPE ("ay"));
-			for (i = 0; i < msg->data_len; i++) {
-				g_variant_builder_add(builder, "y", msg->data[i]);
+				dbg("type_format(%s)", g_variant_get_type_string(packet));
+				telephony_ss_emit_release_complete(ss, msg->data_len, packet );
+			} else {
+				dbg("No data is passed in USSD release notification");
+				g_variant_builder_init(&builder, G_VARIANT_TYPE ("ay"));
+				g_variant_builder_add(&builder, "y", '\0');
+				msg_data = g_variant_builder_end(&builder);
+				packet = g_variant_new("v", msg_data);
+				dbg("type_format(%s)", g_variant_get_type_string(packet));
+				telephony_ss_emit_release_complete(ss, 1, packet);
 			}
-			msg_data = g_variant_builder_end(builder);
-
-			packet = g_variant_new("v", msg_data);
-			dbg("type_format(%s)", g_variant_get_type_string(packet));
-
-			telephony_ss_emit_release_complete(ss,
-					msg->data_len,
-					packet );
-
+		} break;
+		case TNOTI_SS_INFO: {
+			const struct tnoti_ss_information *ss_info = data;
+			telephony_ss_emit_notify_ss_info(ss,
+					ss_info->err,
+					ss_info->ss_type);
+			_launch_ciss_information(ss_info);
+			/* Launch CISS application
+			_launch_ciss(ss_info);
+			*/
 		} break;
 		default:
 			dbg("not handled command[%d]", command);

@@ -3,6 +3,7 @@
 	<interface name="org.tizen.telephony.Call">
 		<method name="Dial">
 			<arg direction="in" type="i" name="call_type"/>
+			<arg direction="in" type="i" name="call_ecc"/>
 			<arg direction="in" type="s" name="call_number"/>
 			<arg direction="out" type="i" name="result"/>
 		</method>
@@ -22,8 +23,19 @@
 			<arg direction="out" type="i" name="end_type"/>
 		</method>
 
-		<method name="Dtmf">
+		<method name="StartContDtmf">
+			<arg direction="in" type="y" name="dtmf_digit"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="StopContDtmf">
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="SendBurstDtmf">
 			<arg direction="in" type="s" name="dtmf_string"/>
+			<arg direction="in" type="i" name="pulse_width"/>
+			<arg direction="in" type="i" name="inter_digit_interval"/>
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
@@ -68,6 +80,16 @@
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
+		<method name="GetPrivacyMode">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="privacy_mode"/>
+		</method>
+
+		<method name="SetPrivacyMode">
+			<arg direction="in" type="i" name="privacy_mode"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
 		<method name="GetStatus">
 			<arg direction="in" type="i" name="call_id"/>
 			<arg direction="out" type="i" name="call_id"/>
@@ -88,30 +110,29 @@
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
-		<method name="GetVolume">
+		<method name="GetSoundVolumeLevel">
 			<arg direction="in" type="i" name="sound_device"/>
 			<arg direction="in" type="i" name="sound_type"/>
-			<arg direction="out" type="i" name="result"/>
 			<arg direction="out" type="aa{sv}" name="list"/>
+			<arg direction="out" type="i" name="result"/>
 		</method>
 
-		<method name="SetVolume">
+		<method name="SetSoundVolumeLevel">
 			<arg direction="in" type="i" name="sound_device"/>
 			<arg direction="in" type="i" name="sound_type"/>
 			<arg direction="in" type="i" name="sound_volume"/>
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
-		<method name="GetMuteStatus">
+		<method name="GetSoundMuteStatus">
 			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="path"/>
 			<arg direction="out" type="i" name="status"/>
 		</method>
 
-		<method name="Mute">
-			<arg direction="out" type="i" name="result"/>
-		</method>
-
-		<method name="Unmute">
+		<method name="SetSoundMuteStatus">
+			<arg direction="in" type="i" name="path"/>
+			<arg direction="in" type="i" name="status"/>
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
@@ -137,6 +158,15 @@
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
+		<method name="SetPreferredVoiceSubscription">
+			<arg direction="in" type="i" name="preferred_subscription"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="GetPreferredVoiceSubscription">
+			<arg direction="out" type="i" name="preferred_subscription"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
 
 		<signal name="VoiceCallStatusIdle">
 			<arg type="i" name="call_id"/>
@@ -196,6 +226,10 @@
 			<arg type="i" name="call_id"/>
 		</signal>
 
+		<signal name="ForwardedCall">
+			<arg type="i" name="call_id"/>
+		</signal>
+
 		<signal name="BarredIncoming">
 			<arg type="i" name="call_id"/>
 		</signal>
@@ -224,6 +258,30 @@
 			<arg type="i" name="call_id"/>
 		</signal>
 
+		<signal name="CallPrivacyMode">
+			<arg type="i" name="privacy_mode"/>
+		</signal>
+
+		<signal name="CallOtaspStatus">
+			<arg type="i" name="otasp_status"/>
+		</signal>
+
+		<signal name="CallOtapaStatus">
+			<arg type="i" name="otapa_status"/>
+		</signal>
+
+		<signal name="CallSignalInfo">
+			<arg type="i" name="signal_type"/>
+			<arg type="i" name="pitch_type"/>
+			<arg type="i" name="signal"/>
+		</signal>
+
+		<signal name="CallInfoRec">
+			<arg type="i" name="id"/>
+			<arg type="i" name="type"/>
+			<arg type="s" name="param"/>
+		</signal>
+
 		<signal name="CallSoundPath">
 			<arg type="i" name="sound_path"/>
 		</signal>
@@ -249,6 +307,9 @@
 			<arg type="b" name="status"/>
 		</signal>
 
+		<signal name="CallPreferredVoiceSubscription">
+			<arg type="i" name="preferred_subs"/>
+		</signal>
 	</interface>
 
 </node>
