@@ -13,8 +13,8 @@
 		<method name="GetIMSI">
 			<arg direction="out" type="s" name="plmn"/>
 			<arg direction="out" type="s" name="msin"/>
-		</method>		
-		
+		</method>
+
 		<method name="GetECC">
 			<arg direction="out" type="aa{sv}" name="ecc_list"/>
 		<!-- dict
@@ -39,29 +39,72 @@
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
-		<method name="GetCallforwarding">
+		<method name="GetCallForwarding">
 			<arg direction="out" type="i" name="result"/>
-			<arg direction="out" type="b" name="line1"/>
-			<arg direction="out" type="b" name="line2"/>
+			<arg direction="out" type="b" name="cphs"/>
+			<arg direction="out" type="aa{sv}" name="cf"/>
+			<arg direction="out" type="a{sv}" name="cphs_cf"/>
+		</method>
+
+		<method name="SetCallForwarding">
+			<arg direction="in" type="b" name="cphs"/>
+			<arg direction="in" type="i" name="rec_index"/>
+			<arg direction="in" type="i" name="msp_num"/>
+			<arg direction="in" type="y" name="cfu_status"/>
+			<arg direction="in" type="i" name="ton"/>
+			<arg direction="in" type="i" name="npi"/>
+			<arg direction="in" type="s" name="number"/>
+			<arg direction="in" type="i" name="cc2_id"/>
+			<arg direction="in" type="i" name="ext7_id"/>
+			<arg direction="in" type="b" name="cphs_line1"/>
+			<arg direction="in" type="b" name="cphs_line2"/>
+			<arg direction="in" type="b" name="cphs_fax"/>
+			<arg direction="in" type="b" name="cphs_data"/>
+			<arg direction="out" type="i" name="result"/>
 		</method>
 
 		<method name="GetMessageWaiting">
 			<arg direction="out" type="i" name="result"/>
-			<arg direction="out" type="i" name="line1"/>
-			<arg direction="out" type="i" name="line2"/>
-			<arg direction="out" type="i" name="fax"/>
-			<arg direction="out" type="i" name="video"/>
+			<arg direction="out" type="b" name="cphs"/>
+			<arg direction="out" type="aa{sv}" name="mw"/>
+			<arg direction="out" type="a{sv}" name="cphs_mw"/>
+		</method>
+
+		<method name="SetMessageWaiting">
+			<arg direction="in" type="b" name="cphs"/>
+			<arg direction="in" type="i" name="rec_index"/>
+			<arg direction="in" type="y" name="indicator_status"/>
+			<arg direction="in" type="i" name="voice_cnt"/>
+			<arg direction="in" type="i" name="fax_cnt"/>
+			<arg direction="in" type="i" name="email_cnt"/>
+			<arg direction="in" type="i" name="other_cnt"/>
+			<arg direction="in" type="i" name="video_cnt"/>
+			<arg direction="in" type="b" name="cphs_voice1"/>
+			<arg direction="in" type="b" name="cphs_voice2"/>
+			<arg direction="in" type="b" name="cphs_fax"/>
+			<arg direction="in" type="b" name="cphs_data"/>
+			<arg direction="out" type="i" name="result"/>
 		</method>
 
 		<method name="GetMailbox">
 			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="b" name="cphs"/>
 			<arg direction="out" type="aa{sv}" name="list"/>
-		<!-- dict
-		     "type" STRING "voice1"/"voice2"/"fax"/"video"
-		     "name" STRING (mailbox alpha id)
-		     "number" STRING (mailbox number)
-		     "ton" INT refer {enum tel_sim_ton}
-		-->
+		</method>
+
+		<method name="SetMailbox">
+			<arg direction="in" type="b" name="cphs"/>
+			<arg direction="in" type="i" name="type"/>
+			<arg direction="in" type="i" name="rec_index"/>
+			<arg direction="in" type="i" name="profile_number"/>
+			<arg direction="in" type="i" name="alpha_id_max_len"/>
+			<arg direction="in" type="s" name="alpha_id"/>
+			<arg direction="in" type="i" name="ton"/>
+			<arg direction="in" type="i" name="npi"/>
+			<arg direction="in" type="s" name="number"/>
+			<arg direction="in" type="i" name="cc_id"/>
+			<arg direction="in" type="i" name="ext1_id"/>
+			<arg direction="out" type="i" name="result"/>
 		</method>
 
 		<method name="GetCPHSInfo">
@@ -72,6 +115,12 @@
 			<arg direction="out" type="b" name="sst"/>
 			<arg direction="out" type="b" name="csp"/>
 			<arg direction="out" type="b" name="info_number"/>
+		</method>
+
+		<method name="GetServiceTable">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="sim_type"/>
+			<arg direction="out" type="v" name="service"/>
 		</method>
 
 		<method name="GetMSISDN">
@@ -88,7 +137,7 @@
 			<arg direction="out" type="aa{sv}" name="list"/>
 		<!-- dict
 		     "plmn" STRING
-		     "b_umts" BOOLEAN TRUE/FALSE 
+		     "b_umts" BOOLEAN TRUE/FALSE
 		     "b_gsm" BOOLEAN TRUE/FALSE
 		-->
 		</method>
@@ -97,12 +146,18 @@
 			<arg direction="out" type="i" name="result"/>
 			<arg direction="out" type="y" name="display_condition"/>
 			<arg direction="out" type="s" name="spn"/>
-		</method>		
+		</method>
 
 		<method name="GetCphsNetName">
 			<arg direction="out" type="i" name="result"/>
 			<arg direction="out" type="s" name="full_name"/>
 			<arg direction="out" type="s" name="short_name"/>
+		</method>
+
+		<method name="GetGID">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="gid_len"/>
+			<arg direction="out" type="v" name="gid"/>
 		</method>
 
 		<method name="Authentication">
@@ -186,9 +241,25 @@
 			<arg direction="out" type="v" name="atr"/>
 		</method>
 
+		<method name="GetFields">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="aa{sv}" name="list"/>
+		</method>
+
+		<method name="SetPowerstate">
+			<arg direction="in" type="i" name="state"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
 		<signal name="Status">
 			<arg type="i" name="status"/>
 		</signal>
+
+		<signal name="Refreshed">
+			<arg type="i" name="type"/>
+		</signal>
+
+		<property name="cf_state" type="i" access="read"/>
 
 	</interface>
 

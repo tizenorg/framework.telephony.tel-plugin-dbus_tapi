@@ -27,6 +27,7 @@
 			<arg direction="out" type="i" name="index_max"/>
 			<arg direction="out" type="i" name="number_length_max"/>
 			<arg direction="out" type="i" name="text_length_max"/>
+			<arg direction="out" type="i" name="used_count"/>
 		</method>
 
 		<method name="GetUsimMetaInfo">
@@ -45,6 +46,8 @@
 			<arg direction="out" type="i" name="dcs"/>
 			<arg direction="out" type="s" name="number"/>
 			<arg direction="out" type="i" name="ton"/>
+			<arg direction="out" type="s" name="sne"/>
+			<arg direction="out" type="i" name="sne_dcs"/>
 			<arg direction="out" type="s" name="number2"/>
 			<arg direction="out" type="i" name="number2_ton"/>
 			<arg direction="out" type="s" name="number3"/>
@@ -65,6 +68,8 @@
 			<arg direction="in" type="i" name="dcs"/>
 			<arg direction="in" type="s" name="number"/>
 			<arg direction="in" type="i" name="ton"/>
+			<arg direction="in" type="s" name="sne"/>
+			<arg direction="in" type="i" name="sne_dcs"/>
 			<arg direction="in" type="s" name="number2"/>
 			<arg direction="in" type="i" name="number2_ton"/>
 			<arg direction="in" type="s" name="number3"/>
@@ -87,6 +92,12 @@
 
 		<signal name="Status">
 			<arg type="i" name="status"/>
+			<arg type="b" name="b_fdn"/>
+			<arg type="b" name="b_adn"/>
+			<arg type="b" name="b_sdn"/>
+			<arg type="b" name="b_usim"/>
+			<arg type="b" name="b_aas"/>
+			<arg type="b" name="b_gas"/>
 		</signal>
 
 	</interface>

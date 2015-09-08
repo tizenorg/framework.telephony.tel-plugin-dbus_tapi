@@ -1,5 +1,5 @@
 /*
- * libslp-tapi
+ * tel-plugin-dbus_tapi
  *
  * Copyright (c) 2011 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -82,7 +82,7 @@ typedef enum {
 	TAPI_SS_CB_TYPE_BOIC_NOT_HC, /* 0x03 : Barring Outgoing International Calls
 								 except to Home Country */
 	TAPI_SS_CB_TYPE_BAIC,                /* 0x04 : Barring All Incoming Calls */
-	TAPI_SS_CB_TYPE_BIC_ROAM,       /* 0x05 : Barring Incoming Calls when roam, 
+	TAPI_SS_CB_TYPE_BIC_ROAM,       /* 0x05 : Barring Incoming Calls when roam,
 									outside of the Home Country */
 	TAPI_SS_CB_TYPE_AB,                   /* 0x06 : All Barring Services */
 	TAPI_SS_CB_TYPE_AOB,                 /* 0x07 : All Outgoing Barring Services */
@@ -153,7 +153,7 @@ typedef enum {
 	TAPI_SS_CLASS_ALL_CS_ASYNC=0x25,              /* 0x25 : All Circuit switched async */
 	TAPI_SS_CLASS_ALL_DEDI_PS=0x26,                /* 0x26 : All Dedicated packet Access */
 	TAPI_SS_CLASS_ALL_DEDI_PAD=0x27,              /* 0x27 : All Dedicated PAD Access */
-	TAPI_SS_CLASS_ALL_DATA_CDA=0x28,		/*0x28 : All Data CDA*/  
+	TAPI_SS_CLASS_ALL_DATA_CDA=0x28,		/*0x28 : All Data CDA*/
 
 	/* PLMN SPECIFIC TELESERVICE */
 	TAPI_SS_CLASS_PLMN_TELE_ALL = 0x50,         /*0x50 : PLMN specific teleservices*/
@@ -221,45 +221,51 @@ typedef enum {
  *  Describes whether a supplementary service request was a success or a failure; and if it failed, why.
  */
 typedef enum {
-	TAPI_SS_SUCCESS, /**<  SS operation was successful */
-	TAPI_SS_TIMEREXPIRE, /**< SS operation timer expired on network. */
-	TAPI_SS_UNKNOWNSUBSCRIBER, /**< SS error indicating unknown/illegal subscriber.  */
-	TAPI_SS_BEARERSERVICENOTPROVISIONED, /**<The network returns this error when it is requested to  @n
-	 perform an operation on a supplementary service  */
-	TAPI_SS_TELESERVICENOTPROVISIONED, /**<The network returns this error when it is requested to perform  @n
-	 an operation on a supplementary service  */
-	TAPI_SS_ILLEGALSSOPERATION, /**<This error is returned by the network when it is requested to perform an illegal operation @n
-	 which is defined as not applicable for the relevant supplementary service */
-	TAPI_SS_ERRORSTATUS, /**<This error is returned by the network when it is requested to perform an operation @n
-	 which is not compatible with the current status of the relevant supplementary service. */
-	TAPI_SS_NOTAVAILABLE, /**< SS not available in network */
-	TAPI_SS_SUBSCRIPTIONVIOLATION, /**< SS service subscription violation. */
-	TAPI_SS_INCOMPATIBILITY, /**< This error is returned by the network when it is requested for a supplementary service operation incompatible with the @n
-	 status of another supplementary service or with the teleservice or bearer service for which the operation is requested */
-	TAPI_SS_SYSTEMFAILURE, /**< This error is returned by the network, when it cannot perform an operation because of a failure in the network */
-	TAPI_SS_DATAMISSING, /**< This error is returned by the network when an optional parameter is missing in an invoke component @n
-	 or an inner data structure, while it is required by the context of the request. */
-	TAPI_SS_UNEXPECTEDDATAVALUE, /**< SS error indicating unexpected data value on network side *//**< SS operation barred.  */
-	TAPI_SS_PWREGISTRATIONFAILURE, /**< SS error indicating change password failure. */
-	TAPI_SS_NEGATIVEPWCHECK, /**< SS error indicating negative password check.  */
-	TAPI_SS_FACILITYNOTSUPPORTED, /**< SS service facility not supported  */
-	TAPI_SS_RESOURCESNOTAVAILABLE, /**< SS error indicating resources not available in network.  */
-	TAPI_SS_MAXNOMPTYEXCEEDED, /**< SS error indicating Maximum MPTY is reached.  */
-	TAPI_SS_CALLBARRED, /**< This error is returned by the network to the MS when call independent subscriber control procedures are barred by the operator */
-	TAPI_SS_NUMBEROFPWATTEMPTSVIOLATION, /**< SS error indicating barring password attempts violated.  */
-	TAPI_SS_ABSENTSUBSCRIBER, /**< This error is returned when the subscriber has activated the detach service or the system detects the absence condition */
-	TAPI_SS_ILLEGALSUBSCRIBER, /**<This error is returned when illegality of the access has been @n
+	TAPI_SS_SUCCESS=0x0, /**<  SS operation was successful */
+
+	TAPI_SS_UNKNOWNSUBSCRIBER= 0x01, /**< SS error indicating unknown/illegal subscriber.  */
+	TAPI_SS_ILLEGALSUBSCRIBER= 0x09, /**<This error is returned when illegality of the access has been @n
 	 established by use of authentication procedure. */
-	TAPI_SS_ILLEGALEQUIPMENT, /**<This error is returned when the IMEI check procedure has shown that  @n
+
+	TAPI_SS_BEARERSERVICENOTPROVISIONED= 0x0a, /**<The network returns this error when it is requested to  @n
+	 perform an operation on a supplementary service  */
+	TAPI_SS_TELESERVICENOTPROVISIONED= 0x0b, /**<The network returns this error when it is requested to perform  @n
+	 an operation on a supplementary service  */
+	TAPI_SS_ILLEGALEQUIPMENT= 0x0c, /**<This error is returned when the IMEI check procedure has shown that  @n
 	 the IMEI is blacklisted or not whitelisted  */
-	TAPI_SS_USSDBUSY, /**< SS error indicating USSD Busy(Already SS / USSD is ongoing).  */
-	TAPI_SS_UNKNOWNALPHABET, /**< SS error indicating unknown SS data coding of alphabet */
-	TAPI_SS_INVALIDDEFLECTEDTONUMBER, /**< SS error indicating the invalid deflected to number.  */
-	TAPI_SS_DEFLECTIONTOSERVEDSUBSCRIBER, /**< This error is returned if a diversion to the served  @n
+	TAPI_SS_CALLBARRED= 0x0d, /**< This error is returned by the network to the MS when call independent subscriber control procedures are barred by the operator */
+	TAPI_SS_ILLEGALSSOPERATION=0x10, /**<This error is returned by the network when it is requested to perform an illegal operation @n
+	 which is defined as not applicable for the relevant supplementary service */
+	TAPI_SS_ERRORSTATUS= 0x11, /**<This error is returned by the network when it is requested to perform an operation @n
+	 which is not compatible with the current status of the relevant supplementary service. */
+	TAPI_SS_NOTAVAILABLE= 0x12, /**< SS not available in network */
+	TAPI_SS_SUBSCRIPTIONVIOLATION= 0x13, /**< SS service subscription violation. */
+	TAPI_SS_INCOMPATIBILITY= 0x14, /**< This error is returned by the network when it is requested for a supplementary service operation incompatible with the @n
+	 status of another supplementary service or with the teleservice or bearer service for which the operation is requested */
+	TAPI_SS_FACILITYNOTSUPPORTED= 0x15, /**< SS service facility not supported  */
+	TAPI_SS_ABSENTSUBSCRIBER= 0x1b, /**< This error is returned when the subscriber has activated the detach service or the system detects the absence condition */
+
+	TAPI_SS_SYSTEMFAILURE= 0x22, /**< This error is returned by the network, when it cannot perform an operation because of a failure in the network */
+	TAPI_SS_DATAMISSING= 0x23, /**< This error is returned by the network when an optional parameter is missing in an invoke component @n
+	 or an inner data structure, while it is required by the context of the request. */
+	TAPI_SS_UNEXPECTEDDATAVALUE= 0x24, /**< SS error indicating unexpected data value on network side *//**< SS operation barred.  */
+	TAPI_SS_PWREGISTRATIONFAILURE= 0x25, /**< SS error indicating change password failure. */
+	TAPI_SS_NEGATIVEPWCHECK= 0x26, /**< SS error indicating negative password check.  */
+	TAPI_SS_NUMBEROFPWATTEMPTSVIOLATION= 0x2b, /**< SS error indicating barring password attempts violated.  */
+
+	TAPI_SS_UNKNOWNALPHABET= 0x47, /**< SS error indicating unknown SS data coding of alphabet */
+	TAPI_SS_USSDBUSY= 0x48, /**< SS error indicating USSD Busy(Already SS / USSD is ongoing).  */
+
+	TAPI_SS_REJECTEDBYUSER= 0x79, /**< SS operation rejected by user.  */
+	TAPI_SS_REJECTEDBYNETWORK=0x7a, /**< SS operation rejected by network.  */
+	TAPI_SS_DEFLECTIONTOSERVEDSUBSCRIBER= 0x7b, /**< This error is returned if a diversion to the served  @n
 	 subscriber's number was requested.  */
-	TAPI_SS_SPECIALSERVICECODE, /**< This error is returned if diversion to a special service code was requested.  */
-	TAPI_SS_REJECTEDBYUSER, /**< SS operation rejected by user.  */
-	TAPI_SS_REJECTEDBYNETWORK, /**< SS operation rejected by network.  */
+	TAPI_SS_SPECIALSERVICECODE= 0x7c, /**< This error is returned if diversion to a special service code was requested.  */
+	TAPI_SS_INVALIDDEFLECTEDTONUMBER= 0x7d, /**< SS error indicating the invalid deflected to number.  */
+	TAPI_SS_MAXNOMPTYEXCEEDED= 0x7e, /**< SS error indicating Maximum MPTY is reached.  */
+	TAPI_SS_RESOURCESNOTAVAILABLE= 0x7f, /**< SS error indicating resources not available in network.  */
+
+	TAPI_SS_TIMEREXPIRE, /**< SS operation timer expired on network. */
 	TAPI_SS_NET_NOT_ALLOWED_EMERGENCY_CALLS_ONLY, /**< SS operation is not allowed by network.  */
 	TAPI_SS_UNKNOWNERROR, /**< SS error indicating unknown error  */
 	TAPI_SS_OEM_NOT_SUPPORTED /**< If oem do not support any of SS requests, then this error will be returned back */
@@ -270,9 +276,9 @@ typedef enum {
  *   These enumerated values should be used as masks
  */
 typedef enum {
-	TAPI_SS_STATUS_ACTIVE, /**< Provisioned & registered & active */
-	TAPI_SS_STATUS_REGISTERED, /**< Provisioned & registered (but not active/active-quiescent */
+	TAPI_SS_STATUS_REGISTERED = 0x01, /**< Provisioned & registered (but not active/active-quiescent */
 	TAPI_SS_STATUS_PROVISIONED, /**<Provisioned but not registered (or active/active-quiescent) */
+	TAPI_SS_STATUS_ACTIVE, /**< Provisioned & registered & active */
 	TAPI_SS_STATUS_QUIESCENT, /**< Provisioned & registered & active but quiescent */
 	TAPI_SS_STATUS_NOTHING /**< Not provisioned */
 } TelSsStatus_t;
@@ -281,7 +287,7 @@ typedef enum {
  * These are the four types of identity presentation / restriction services.
  */
 typedef enum {
-	TAPI_CALLING_LINE_IDENTITY_PRESENTATION, /**< identify the party calling this phone */
+	TAPI_CALLING_LINE_IDENTITY_PRESENTATION= 0x01, /**< identify the party calling this phone */
 	TAPI_CALLING_LINE_IDENTITY_RESTRICTION, /**< hide the identity of this phone when calling others */
 	TAPI_CONNECTED_LINE_IDENTITY_PRESENTATION, /**< identify the party to whom the calling party (this phone) is connected */
 	TAPI_CONNECTED_LINE_IDENTITY_RESTRICTION, /**< restrict yourself from being identified by incoming calls, such as forwarded calls */
@@ -324,6 +330,15 @@ typedef enum {
 	TAPI_SS_AOC_TYPE_PUC = 0x08 /**< Specifies the Price per unit and currency.*/
 } TelSsAocType_t;
 
+typedef enum {
+	TAPI_SS_TYPE_BARRING = 0x00,
+	TAPI_SS_TYPE_FORWARDING,
+	TAPI_SS_TYPE_WAITING,
+	TAPI_SS_TYPE_CLI,
+	TAPI_SS_TYPE_SEND_USSD,
+	TAPI_SS_TYPE_MAX
+}TelSsInfoType_t;
+
 /**
  *  This structure  defines the different parameters related to forward info.
  */
@@ -361,6 +376,14 @@ typedef struct {
 	TelSsClass_t Class; /**< Call type */
 	TelSsCallWaitingMode_t Mode; /**< Waiting mode  */
 } TelSsWaitingInfo_t;
+
+/**
+ *  This structure  defines the SUPS information message notification type.
+ */
+typedef struct {
+	TelSsCause_t Cause; /**< Cause */
+	TelSsInfoType_t SsType; /**< SUPS Information  */
+} TelSsInfo_t;
 
 /**
  * This structure defines the release complete message notification type.
@@ -413,7 +436,7 @@ typedef struct {
 		TelSsForwardWhen_t ForwardCondition; /**< Call forward types providing various conditions when call can be forwarded */
 		int bCallForwardingNumberPresent; /**< Call forwarding number present or not */
 		unsigned char NoReplyWaitTime;
-		unsigned char szCallForwardingNumber[TAPI_CALL_DIALDIGIT_LEN_MAX]; /**< forwarded number.[Null Terminated string]*/
+		unsigned char szCallForwardingNumber[TAPI_CALL_DIALDIGIT_LEN_MAX + 1]; /**< forwarded number.[Null Terminated string]*/
 	} record[TAPI_SS_RECORD_NUM_MAX]; /**< Specifies the  Maximum of TAPI_SS_RECORD_NUM_MAX records. */
 } TelSsForwardResp_t;
 

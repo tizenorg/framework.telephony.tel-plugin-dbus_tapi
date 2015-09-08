@@ -1,5 +1,5 @@
 /*
- * tel-plugin-socket-communicator
+ * tel-plugin-dbus-tapi
  *
  * Copyright (c) 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -22,7 +22,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <glib-object.h>
 
 #include <tcore.h>
 #include <server.h>
@@ -44,8 +43,11 @@ static gboolean on_sap_connect(TelephonySap *sap, GDBusMethodInvocation *invocat
 {
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
-
+	TReturn ret;
 	struct treq_sap_req_connect req_conn;
+
+	if (!check_access_control (invocation, AC_SAP, "x"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
 	memset(&req_conn, 0, sizeof(struct treq_sap_req_connect));
@@ -54,7 +56,12 @@ static gboolean on_sap_connect(TelephonySap *sap, GDBusMethodInvocation *invocat
 
 	tcore_user_request_set_data(ur, sizeof(struct treq_sap_req_connect), &req_conn);
 	tcore_user_request_set_command(ur, TREQ_SAP_REQ_CONNECT);
-	tcore_communicator_dispatch_request(ctx->comm, ur);
+	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
+	if(ret != TCORE_RETURN_SUCCESS) {
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	 	dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
+		tcore_user_request_unref(ur);
+	}
 
 	return TRUE;
 }
@@ -63,15 +70,20 @@ static gboolean on_sap_disconnect(TelephonySap *sap, GDBusMethodInvocation *invo
 {
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
+	TReturn ret;
 
-	struct treq_sap_req_disconnect req_disconn;
+	if (!check_access_control (invocation, AC_SAP, "x"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
-	memset(&req_disconn, 0, sizeof(struct treq_sap_req_disconnect));
 
-	tcore_user_request_set_data(ur, sizeof(struct treq_sap_req_disconnect), &req_disconn);
 	tcore_user_request_set_command(ur, TREQ_SAP_REQ_DISCONNECT);
-	tcore_communicator_dispatch_request(ctx->comm, ur);
+	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
+	if(ret != TCORE_RETURN_SUCCESS) {
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	 	dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
+		tcore_user_request_unref(ur);
+	}
 
 	return TRUE;
 }
@@ -80,15 +92,20 @@ static gboolean on_sap_get_status(TelephonySap *sap, GDBusMethodInvocation *invo
 {
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
+	TReturn ret;
 
-	struct treq_sap_req_status req_status;
+	if (!check_access_control (invocation, AC_SAP, "r"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
-	memset(&req_status, 0, sizeof(struct treq_sap_req_status));
 
-	tcore_user_request_set_data(ur, sizeof(struct treq_sap_req_status), &req_status);
 	tcore_user_request_set_command(ur, TREQ_SAP_REQ_STATUS);
-	tcore_communicator_dispatch_request(ctx->comm, ur);
+	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
+	if(ret != TCORE_RETURN_SUCCESS) {
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	 	dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
+		tcore_user_request_unref(ur);
+	}
 
 	return TRUE;
 }
@@ -97,15 +114,20 @@ static gboolean on_sap_get_atr(TelephonySap *sap, GDBusMethodInvocation *invocat
 {
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
+	TReturn ret;
 
-	struct treq_sap_req_atr req_atr;
+	if (!check_access_control (invocation, AC_SAP, "r"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
-	memset(&req_atr, 0, sizeof(struct treq_sap_req_atr));
 
-	tcore_user_request_set_data(ur, sizeof(struct treq_sap_req_atr), &req_atr);
 	tcore_user_request_set_command(ur, TREQ_SAP_REQ_ATR);
-	tcore_communicator_dispatch_request(ctx->comm, ur);
+	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
+	if(ret != TCORE_RETURN_SUCCESS) {
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	 	dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
+		tcore_user_request_unref(ur);
+	}
 
 	return TRUE;
 }
@@ -116,13 +138,17 @@ static gboolean on_sap_transfer_apdu(TelephonySap *sap, GDBusMethodInvocation *i
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 	struct treq_sap_transfer_apdu t_apdu;
-
+	TReturn ret;
 	GVariantIter *iter = NULL;
 	GVariant *inner_gv = NULL;
 	guchar rt_i;
 	int i =0;
 
 	dbg("Func Entrance");
+
+	if (!check_access_control (invocation, AC_SAP, "x"))
+		return TRUE;
+
 	memset(&t_apdu, 0, sizeof(struct treq_sap_transfer_apdu));
 
 	inner_gv = g_variant_get_variant(arg_req_apdu);
@@ -143,7 +169,12 @@ static gboolean on_sap_transfer_apdu(TelephonySap *sap, GDBusMethodInvocation *i
 	ur = MAKE_UR(ctx, sap, invocation);
 	tcore_user_request_set_data(ur, sizeof(struct treq_sap_transfer_apdu), &t_apdu);
 	tcore_user_request_set_command(ur, TREQ_SAP_TRANSFER_APDU);
-	tcore_communicator_dispatch_request(ctx->comm, ur);
+	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
+	if(ret != TCORE_RETURN_SUCCESS) {
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	 	dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
+		tcore_user_request_unref(ur);
+	}
 
 	return TRUE;
 }
@@ -153,8 +184,11 @@ static gboolean on_sap_set_protocol(TelephonySap *sap, GDBusMethodInvocation *in
 {
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
-
+	TReturn ret;
 	struct treq_sap_set_protocol set_protocol;
+
+	if (!check_access_control (invocation, AC_SAP, "w"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
 	memset(&set_protocol, 0, sizeof(struct treq_sap_set_protocol));
@@ -163,7 +197,12 @@ static gboolean on_sap_set_protocol(TelephonySap *sap, GDBusMethodInvocation *in
 
 	tcore_user_request_set_data(ur, sizeof(struct treq_sap_set_protocol), &set_protocol);
 	tcore_user_request_set_command(ur, TREQ_SAP_SET_PROTOCOL);
-	tcore_communicator_dispatch_request(ctx->comm, ur);
+	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
+	if(ret != TCORE_RETURN_SUCCESS) {
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	 	dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
+		tcore_user_request_unref(ur);
+	}
 
 	return TRUE;
 }
@@ -173,8 +212,11 @@ static gboolean on_sap_set_power(TelephonySap *sap, GDBusMethodInvocation *invoc
 {
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
-
+	TReturn ret;
 	struct treq_sap_set_power set_power;
+
+	if (!check_access_control (invocation, AC_SAP, "w"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
 	memset(&set_power, 0, sizeof(struct treq_sap_set_power));
@@ -183,7 +225,12 @@ static gboolean on_sap_set_power(TelephonySap *sap, GDBusMethodInvocation *invoc
 
 	tcore_user_request_set_data(ur, sizeof(struct treq_sap_set_power), &set_power);
 	tcore_user_request_set_command(ur, TREQ_SAP_SET_POWER);
-	tcore_communicator_dispatch_request(ctx->comm, ur);
+	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
+	if(ret != TCORE_RETURN_SUCCESS) {
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	 	dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
+		tcore_user_request_unref(ur);
+	}
 
 	return TRUE;
 }
@@ -192,15 +239,20 @@ static gboolean on_sap_get_card_reader_status(TelephonySap *sap, GDBusMethodInvo
 {
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
+	TReturn ret;
 
-	struct treq_sap_req_cardreaderstatus req_reader;
+	if (!check_access_control (invocation, AC_SAP, "r"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, sap, invocation);
-	memset(&req_reader, 0, sizeof(struct treq_sap_req_cardreaderstatus));
 
-	tcore_user_request_set_data(ur, sizeof(struct treq_sap_req_cardreaderstatus), &req_reader);
 	tcore_user_request_set_command(ur, TREQ_SAP_REQ_CARDREADERSTATUS);
-	tcore_communicator_dispatch_request(ctx->comm, ur);
+	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
+	if(ret != TCORE_RETURN_SUCCESS) {
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	 	dbg("[ error ] tcore_communicator_dispatch_request() : (0x%x)", ret);
+		tcore_user_request_unref(ur);
+	}
 
 	return TRUE;
 }
@@ -293,19 +345,18 @@ gboolean dbus_plugin_sap_response(struct custom_data *ctx, UserRequest *ur,
 			break;
 
 		case TRESP_SAP_REQ_ATR: {
-			GVariantBuilder *builder = NULL;
+			GVariantBuilder builder;
 			GVariant * atr_gv = NULL;
 			GVariant *inner_gv = NULL;
 			int i =0;
 
 			dbg("dbus comm - TRESP_SAP_REQ_ATR");
-			builder = g_variant_builder_new (G_VARIANT_TYPE ("ay"));
+			g_variant_builder_init(&builder, G_VARIANT_TYPE ("ay"));
 			for(i = 0; i < (int)sap_atr->atr_length; i++) {
 				dbg("sap_atr->atr[%d][0x%02x]", i,sap_atr->atr[i]);
-				g_variant_builder_add (builder, "y", sap_atr->atr[i]);
+				g_variant_builder_add (&builder, "y", sap_atr->atr[i]);
 			}
-			inner_gv = g_variant_builder_end(builder);
-/*			g_variant_builder_unref (builder);*/
+			inner_gv = g_variant_builder_end(&builder);
 			atr_gv = g_variant_new("v", inner_gv);
 
 			telephony_sap_complete_get_atr(dbus_info->interface_object, dbus_info->invocation,
@@ -314,19 +365,18 @@ gboolean dbus_plugin_sap_response(struct custom_data *ctx, UserRequest *ur,
 			break;
 
 		case TRESP_SAP_TRANSFER_APDU: {
-			GVariantBuilder *builder = NULL;
+			GVariantBuilder builder;
 			GVariant * apdu_gv = NULL;
 			GVariant *inner_gv = NULL;
 			int i =0;
 
 			dbg("dbus comm - TRESP_SAP_TRANSFER_APDU");
-			builder = g_variant_builder_new (G_VARIANT_TYPE ("ay"));
+			g_variant_builder_init(&builder, G_VARIANT_TYPE ("ay"));
 			for(i = 0; i < (int)sap_apdu->resp_apdu_length; i++) {
 				dbg("sap_apdu->resp_adpdu[%d][0x%02x]", i,sap_apdu->resp_adpdu[i]);
-				g_variant_builder_add (builder, "y", sap_apdu->resp_adpdu[i]);
+				g_variant_builder_add (&builder, "y", sap_apdu->resp_adpdu[i]);
 			}
-			inner_gv = g_variant_builder_end(builder);
-/*			g_variant_builder_unref (builder);*/
+			inner_gv = g_variant_builder_end(&builder);
 			apdu_gv = g_variant_new("v", inner_gv);
 
 			telephony_sap_complete_transfer_apdu(dbus_info->interface_object, dbus_info->invocation,
@@ -360,7 +410,7 @@ gboolean dbus_plugin_sap_response(struct custom_data *ctx, UserRequest *ur,
 	return TRUE;
 }
 
-gboolean dbus_plugin_sap_notification(struct custom_data *ctx, const char *plugin_name,
+gboolean dbus_plugin_sap_notification(struct custom_data *ctx, CoreObject *source,
 		TelephonyObjectSkeleton *object, enum tcore_notification_command command,
 		unsigned int data_len, const void *data)
 {
@@ -374,9 +424,6 @@ gboolean dbus_plugin_sap_notification(struct custom_data *ctx, const char *plugi
 	}
 
 	sap = telephony_object_peek_sap(TELEPHONY_OBJECT(object));
-	dbg("sap = %p", sap);
-
-	dbg("notification !!! (command = 0x%x, data_len = %d)", command, data_len);
 
 	switch (command) {
 		case TNOTI_SAP_STATUS:

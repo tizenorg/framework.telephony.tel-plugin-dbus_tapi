@@ -1,0 +1,70 @@
+<node>
+	<!--
+		org.tizen.telephony.Gps:
+		@short_description: Tizen Telephony Gps interface
+
+		Gps interface.
+
+	-->
+	<interface name="org.tizen.telephony.Gps">
+		<method name="SetFrequencyAiding">
+			<arg direction="in" type="y" name="state"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+		<method name="ConfirmMeasurePos">
+			<arg direction="in" type="s" name="data"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+		<method name="EnableSmartAssistant">
+			<arg direction="out" type="i" name="result"/>
+		</method>
+		<method name="DisableSmartAssistant">
+			<arg direction="out" type="i" name="result"/>
+		</method>
+		<method name="SyncSmartAssistantAreaList">
+			<arg direction="in" type="i" name="count"/>
+			<arg direction="in" type="v" name="list"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+		<method name="DelSmartAssistantAreaList">
+			<arg direction="in" type="i" name="count"/>
+			<arg direction="in" type="v" name="list"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+		<method name="AddSmartAssistantArea">
+			<arg direction="in" type="i" name="index"/>
+			<arg direction="in" type="i" name="mode_state"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+		<method name="ModifySmartAssistantArea">
+			<arg direction="in" type="i" name="index"/>
+			<arg direction="in" type="i" name="mode_state"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+		<method name="SetSmartAssistantInfo">
+			<arg direction="in" type="i" name="index"/>
+			<arg direction="in" type="i" name="lpp_state"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+		<signal name="AssistData">
+			<arg type="s" name="data"/>
+		</signal>
+		<signal name="MeasurePosition">
+			<arg type="s" name="data"/>
+		</signal>
+		<signal name="ResetAssistData">
+		</signal>
+		<signal name="FrequencyAiding">
+			<arg type="s" name="data"/>
+		</signal>
+		<signal name="AreaStatus">
+			<arg type="i" name="status"/>
+			<arg type="i" name="index"/>
+		</signal>
+		<signal name="SyncStatus">
+			<arg type="i" name="status"/>
+			<arg type="i" name="cause"/>
+		</signal>
+	</interface>
+
+</node>

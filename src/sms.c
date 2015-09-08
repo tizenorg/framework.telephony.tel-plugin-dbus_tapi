@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <glib.h>
-#include <glib-object.h>
 #include <gio/gio.h>
 
 #include <tcore.h>
@@ -45,9 +44,9 @@ TReturn	ret = TCORE_RETURN_SUCCESS;
 
 static gboolean
 on_sms_send_msg(TelephonySms *sms, GDBusMethodInvocation *invocation,
-	const gchar *sca,
+	GVariant *sca,
 	gint tpdu_length,
-	const gchar *tpdu_data,
+	GVariant *tpdu_data,
 	gint moreMsg,
 	gpointer user_data)
 {
@@ -55,39 +54,48 @@ on_sms_send_msg(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 
-	gsize length;
-	guchar *decoded_sca = NULL;
-	guchar *decoded_tpdu = NULL;
+	int i = 0;
+	GVariantIter *iter = 0;
+	GVariant *inner_gv = 0;
+
+	if (!check_access_control (invocation, AC_SMS, "x"))
+		return TRUE;
 
 	memset(&sendUmtsMsg, 0 , sizeof(struct treq_sms_send_umts_msg));
 
-	decoded_sca = g_base64_decode(sca, &length);
-	memcpy(&(sendUmtsMsg.msgDataPackage.sca[0]), decoded_sca, SMS_SMSP_ADDRESS_LEN);
+	inner_gv = g_variant_get_variant( sca );
+	g_variant_get(inner_gv, "ay", &iter);
+	while( g_variant_iter_loop(iter, "y", &sendUmtsMsg.msgDataPackage.sca[i] ) ) {
+		i++;
+		if( i >= SMS_SMSP_ADDRESS_LEN )
+			break;
+	}
 
 	sendUmtsMsg.msgDataPackage.msgLength = tpdu_length;
-	dbg("tpdu_length = 0x%x", tpdu_length);
 
-	decoded_tpdu = g_base64_decode(tpdu_data, &length);
-	memcpy(&(sendUmtsMsg.msgDataPackage.tpduData[0]), decoded_tpdu, SMS_SMDATA_SIZE_MAX + 1);
+	i = 0;
+	inner_gv = g_variant_get_variant( tpdu_data );
+	g_variant_get(inner_gv, "ay", &iter);
+	while( g_variant_iter_loop(iter, "y", &sendUmtsMsg.msgDataPackage.tpduData[i] ) ) {
+		i++;
+		if( i >= SMS_SMDATA_SIZE_MAX + 1 )
+			break;
+	}
+	g_variant_iter_free(iter);
+	g_variant_unref(inner_gv);
+
 	sendUmtsMsg.more = moreMsg;
 
 	ur = MAKE_UR(ctx, sms, invocation);
 	tcore_user_request_set_data(ur, sizeof(struct treq_sms_send_umts_msg), &sendUmtsMsg);
 	tcore_user_request_set_command(ur, TREQ_SMS_SEND_UMTS_MSG);
 
-	if(decoded_sca)
-		g_free(decoded_sca);
-	
-	if(decoded_tpdu)
-		g_free(decoded_tpdu);
-
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		// api_err = TAPI_API_OPERATION_FAILED;
-		err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
-		return  FALSE;
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref(ur);
 	}
-		
+
 	return  TRUE;
 }
 /*
@@ -267,6 +275,9 @@ on_sms_read_msg(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 
+	if (!check_access_control (invocation, AC_SMS, "r"))
+		return TRUE;
+
 	readMsg.index = arg_index;
 
 	ur = MAKE_UR(ctx, sms, invocation);
@@ -275,8 +286,8 @@ on_sms_read_msg(TelephonySms *sms, GDBusMethodInvocation *invocation,
 
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		// api_err = TAPI_API_OPERATION_FAILED;
-		err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref(ur);
 	}
 
 	return TRUE;
@@ -285,43 +296,54 @@ on_sms_read_msg(TelephonySms *sms, GDBusMethodInvocation *invocation,
 static gboolean
 on_sms_save_msg(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	gint arg_msg_status,
-	const gchar * arg_sca,
+	GVariant * arg_sca,
 	gint arg_tpdu_length,
-	const gchar * arg_tpdu_data,
+	GVariant * arg_tpdu_data,
 	gpointer user_data)
 {
-        struct treq_sms_save_msg saveMsg = {0,};
+	struct treq_sms_save_msg saveMsg = {0,};
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 
-	gsize length;
-	guchar *decoded_sca = NULL;
-	guchar *decoded_tpdu = NULL;
-	
+	int i = 0;
+	GVariantIter *iter = 0;
+	GVariant *inner_gv = 0;
+
+	if (!check_access_control (invocation, AC_SMS, "w"))
+		return TRUE;
+
+	saveMsg.simIndex = 0xffff;
 	saveMsg.msgStatus = arg_msg_status;
 
-	decoded_sca = g_base64_decode(arg_sca, &length);
-	memcpy(&(saveMsg.msgDataPackage.sca[0]), decoded_sca, SMS_SMSP_ADDRESS_LEN);
+	inner_gv = g_variant_get_variant( arg_sca );
+	g_variant_get(inner_gv, "ay", &iter);
+	while( g_variant_iter_loop(iter, "y", &saveMsg.msgDataPackage.sca[i] ) ) {
+		i++;
+		if( i >= SMS_SMSP_ADDRESS_LEN )
+			break;
+	}
+
+	i = 0;
+	inner_gv = g_variant_get_variant( arg_tpdu_data );
+	g_variant_get(inner_gv, "ay", &iter);
+	while( g_variant_iter_loop(iter, "y", &saveMsg.msgDataPackage.tpduData[i] ) ) {
+		i++;
+		if( i >= SMS_SMDATA_SIZE_MAX + 1 )
+			break;
+	}
+	g_variant_iter_free(iter);
+	g_variant_unref(inner_gv);
 
 	saveMsg.msgDataPackage.msgLength = arg_tpdu_length;
-
-	decoded_tpdu = g_base64_decode(arg_tpdu_data, &length);
-	memcpy(&(saveMsg.msgDataPackage.tpduData[0]), decoded_tpdu, SMS_SMDATA_SIZE_MAX + 1);
 
 	ur = MAKE_UR(ctx, sms, invocation);
 	tcore_user_request_set_data(ur, sizeof(struct treq_sms_save_msg), &saveMsg);
 	tcore_user_request_set_command(ur, TREQ_SMS_SAVE_MSG);
 
-	if(decoded_sca)
-		g_free(decoded_sca);
-	
-	if(decoded_tpdu)
-		g_free(decoded_tpdu);
-	
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		// api_err = TAPI_API_OPERATION_FAILED;
-		err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref(ur);
 	}
 
 	return TRUE;
@@ -332,9 +354,12 @@ on_sms_delete_msg(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	gint arg_index,
 	gpointer user_data)
 {
-        struct treq_sms_delete_msg deleteMsg = {0,};
+	struct treq_sms_delete_msg deleteMsg = {0,};
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
+
+	if (!check_access_control (invocation, AC_SMS, "x"))
+		return TRUE;
 
 	deleteMsg.index = arg_index;
 
@@ -344,8 +369,8 @@ on_sms_delete_msg(TelephonySms *sms, GDBusMethodInvocation *invocation,
 
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		// api_err = TAPI_API_OPERATION_FAILED;
-		err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref(ur);
 	}
 
 	return TRUE;
@@ -355,18 +380,20 @@ static gboolean
 on_sms_get_msg_count(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	gpointer user_data)
 {
-        struct treq_sms_get_msg_count getMsgCnt;
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 
+	if (!check_access_control (invocation, AC_SMS, "r"))
+		return TRUE;
+
 	ur = MAKE_UR(ctx, sms, invocation);
-	tcore_user_request_set_data(ur, sizeof(struct treq_sms_get_msg_count), &getMsgCnt);
+	tcore_user_request_set_data(ur, 0, NULL);
 	tcore_user_request_set_command(ur, TREQ_SMS_GET_COUNT);
 
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		// api_err = TAPI_API_OPERATION_FAILED;
-		err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref(ur);
 	}
 
 	return TRUE;
@@ -377,9 +404,12 @@ on_sms_get_sca(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	gint arg_index,
 	gpointer user_data)
 {
-        struct treq_sms_get_sca getSca = {0,};
+	struct treq_sms_get_sca getSca = {0,};
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
+
+	if (!check_access_control (invocation, AC_SMS, "r"))
+		return TRUE;
 
 	getSca.index = arg_index;
 
@@ -389,9 +419,8 @@ on_sms_get_sca(TelephonySms *sms, GDBusMethodInvocation *invocation,
 
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		// api_err = TAPI_API_OPERATION_FAILED;
-		err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
-		return  FALSE;
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref(ur);
 	}
 
 	return TRUE;
@@ -403,12 +432,19 @@ on_sms_set_sca(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	gint arg_ton,
 	gint arg_npi,
 	gint arg_dialNumberLength,
-	const gchar *arg_dialNumber,
+	GVariant *arg_dialNumber,
 	gpointer user_data)
 {
-        struct treq_sms_set_sca setSca;
+	struct treq_sms_set_sca setSca;
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
+
+	int i = 0;
+	GVariantIter *iter = 0;
+	GVariant *inner_gv = 0;
+
+	if (!check_access_control (invocation, AC_SMS, "w"))
+		return TRUE;
 
 	memset(&setSca, 0, sizeof(struct treq_sms_set_sca));
 
@@ -420,34 +456,36 @@ on_sms_set_sca(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	if ((setSca.scaInfo.dialNumLen <= 0) || (setSca.scaInfo.dialNumLen > (SMS_MAX_SMS_SERVICE_CENTER_ADDR + 1)))
 	{
 		err("[tcore_SMS] TAPI_API_INVALID_INPUT !!!");
-		return  FALSE;
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		return  TRUE;
 	}
 	else if(setSca.index != 0)
 	{
 		err("[tcore_SMS] Index except 0 is supported");
-		// api_err = TAPI_API_NOT_SUPPORTED;
-		return  FALSE;
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		return  TRUE;
 	}
 	else
 	{
-		gsize length;
-		guchar *decoded_sca = NULL;
-	
-		decoded_sca = g_base64_decode(arg_dialNumber, &length);
-		memcpy(&(setSca.scaInfo.diallingNum[0]), decoded_sca, SMS_SMSP_ADDRESS_LEN + 1);
+		inner_gv = g_variant_get_variant( arg_dialNumber );
+		g_variant_get(inner_gv, "ay", &iter);
+		while( g_variant_iter_loop(iter, "y", &setSca.scaInfo.diallingNum[i] ) ) {
+			i++;
+			if( i >= SMS_SMSP_ADDRESS_LEN + 1 )
+				break;
+		}
 
 		ur = MAKE_UR(ctx, sms, invocation);
 		tcore_user_request_set_data(ur, sizeof(struct treq_sms_set_sca), &setSca);
 		tcore_user_request_set_command(ur, TREQ_SMS_SET_SCA);
 
-		if(decoded_sca)
-			g_free(decoded_sca);
-		
+		g_variant_iter_free(iter);
+		g_variant_unref(inner_gv);
+
 		ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 		if (ret != TCORE_RETURN_SUCCESS) {
-			//api_err = TAPI_API_OPERATION_FAILED;
-			err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
-			return  FALSE;
+			FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+			tcore_user_request_unref(ur);
 		}
 	}
 
@@ -458,19 +496,20 @@ static gboolean
 on_sms_get_cb_config(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	gpointer user_data)
 {
-	struct treq_sms_get_cb_config getCbConfig;
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 
+	if (!check_access_control (invocation, AC_SMS, "r"))
+		return TRUE;
+
 	ur = MAKE_UR(ctx, sms, invocation);
-	tcore_user_request_set_data(ur, sizeof(struct treq_sms_get_cb_config), &getCbConfig);
+	tcore_user_request_set_data(ur, 0, NULL);
 	tcore_user_request_set_command(ur, TREQ_SMS_GET_CB_CONFIG);
 
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		//api_err = TAPI_API_OPERATION_FAILED;
-		err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
-		return  FALSE;
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref(ur);
 	}
 
 	return TRUE;
@@ -482,36 +521,64 @@ on_sms_set_cb_config(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	gboolean arg_cbEnable,
 	gint arg_msgIdMaxCount,
 	gint arg_msgIdRangeCount,
-	const gchar *arg_msgId,
+	GVariant *arg_mdgId,
 	gpointer user_data)
 {
     struct treq_sms_set_cb_config setCbConfig = {0,};
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 
-	gsize length;
-	guchar *decoded_msgId = NULL;
+	GVariant *value = NULL;
+	GVariant *inner_gv = 0;
+	GVariantIter *iter = NULL;
+	GVariantIter *iter_row = NULL;
+	const gchar *key = NULL;
+	int i = 0;
+
+	if (!check_access_control (invocation, AC_SMS, "w"))
+		return TRUE;
 
 	setCbConfig.net3gppType = arg_net3gppType;
 	setCbConfig.cbEnabled = arg_cbEnable;
 	setCbConfig.msgIdMaxCount = arg_msgIdMaxCount;
 	setCbConfig.msgIdRangeCount = arg_msgIdRangeCount;
 
-	decoded_msgId = g_base64_decode(arg_msgId, &length);
-	memcpy(&(setCbConfig.msgIDs[0]), decoded_msgId, SMS_GSM_SMS_CBMI_LIST_SIZE_MAX*5);
+	inner_gv = g_variant_get_variant( arg_mdgId );
+	g_variant_get(inner_gv, "aa{sv}", &iter);
+
+	while (g_variant_iter_next(iter, "a{sv}", &iter_row)) {
+		while (g_variant_iter_loop(iter_row, "{sv}", &key, &value)) {
+			if (!g_strcmp0(key, "FromMsgId")) {
+				setCbConfig.msgIDs[i].net3gpp.fromMsgId = g_variant_get_uint16(value);
+			}
+			if (!g_strcmp0(key, "ToMsgId")) {
+				setCbConfig.msgIDs[i].net3gpp.toMsgId = g_variant_get_uint16(value);
+			}
+			if (!g_strcmp0(key, "CBCategory")) {
+				setCbConfig.msgIDs[i].net3gpp2.cbCategory = g_variant_get_uint16(value);
+			}
+			if (!g_strcmp0(key, "CBLanguage")) {
+				setCbConfig.msgIDs[i].net3gpp2.cbLanguage = g_variant_get_uint16(value);
+			}
+			if (!g_strcmp0(key, "Selected")) {
+				setCbConfig.msgIDs[i].net3gpp2.selected = g_variant_get_byte(value);
+			}
+		}
+		i++;
+		g_variant_iter_free(iter_row);
+		if ( i >= SMS_GSM_SMS_CBMI_LIST_SIZE_MAX )
+			break;
+	}
+	g_variant_iter_free(iter);
 
 	ur = MAKE_UR(ctx, sms, invocation);
 	tcore_user_request_set_data(ur, sizeof(struct treq_sms_set_cb_config), &setCbConfig);
 	tcore_user_request_set_command(ur, TREQ_SMS_SET_CB_CONFIG);
 
-	if(decoded_msgId)
-		g_free(decoded_msgId);
-	
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		//api_err = TAPI_API_OPERATION_FAILED;
-		err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
-		return  FALSE;
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref(ur);
 	}
 
 	return TRUE;
@@ -522,9 +589,12 @@ on_sms_set_mem_status(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	gint arg_memoryStatus,
 	gpointer user_data)
 {
-        struct treq_sms_set_mem_status memStatus = {0,};
+	struct treq_sms_set_mem_status memStatus = {0,};
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
+
+	if (!check_access_control (invocation, AC_SMS, "w"))
+		return TRUE;
 
 	memStatus.memory_status = arg_memoryStatus;
 
@@ -534,9 +604,8 @@ on_sms_set_mem_status(TelephonySms *sms, GDBusMethodInvocation *invocation,
 
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		//api_err = TAPI_API_OPERATION_FAILED;
-		err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
-		return  FALSE;
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref(ur);
 	}
 
 	return TRUE;
@@ -546,9 +615,12 @@ static gboolean
 on_sms_get_pref_bearer(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	gpointer user_data)
 {
-        struct treq_sms_get_pref_bearer getPrefBearer;
+	struct treq_sms_get_pref_bearer getPrefBearer;
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
+
+	if (!check_access_control (invocation, AC_SMS, "r"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, sms, invocation);
 	tcore_user_request_set_data(ur, sizeof(struct treq_sms_get_pref_bearer), &getPrefBearer);
@@ -556,10 +628,10 @@ on_sms_get_pref_bearer(TelephonySms *sms, GDBusMethodInvocation *invocation,
 
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		//api_err = TAPI_API_OPERATION_FAILED;
-		err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
-		return  FALSE;
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref(ur);
 	}
+
 	return TRUE;
 }
 
@@ -568,9 +640,12 @@ on_sms_set_pref_bearer(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	gint arg_bearerType,
 	gpointer user_data)
 {
-        struct treq_sms_set_pref_bearer setPrefBearer = {0,};
+	struct treq_sms_set_pref_bearer setPrefBearer = {0,};
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
+
+	if (!check_access_control (invocation, AC_SMS, "w"))
+		return TRUE;
 
 	setPrefBearer.svc = arg_bearerType;
 
@@ -580,9 +655,8 @@ on_sms_set_pref_bearer(TelephonySms *sms, GDBusMethodInvocation *invocation,
 
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		//api_err = TAPI_API_OPERATION_FAILED;
-		err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
-		return  FALSE;
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref(ur);
 	}
 
 	return TRUE;
@@ -590,29 +664,43 @@ on_sms_set_pref_bearer(TelephonySms *sms, GDBusMethodInvocation *invocation,
 
 static gboolean
 on_sms_set_delivery_report(TelephonySms *sms, GDBusMethodInvocation *invocation,
-	const gchar *arg_sca,
+	GVariant *arg_sca,
 	gint arg_tpdu_length,
-	const gchar *arg_tpdu_data,
+	GVariant *arg_tpdu_data,
 	gint arg_rpCause,
 	gpointer user_data)
 {
-        struct treq_sms_set_delivery_report deliveryReport;
+	struct treq_sms_set_delivery_report deliveryReport;
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 
-	gsize length;
-	guchar *decoded_sca = NULL;
-	guchar *decoded_tpdu = NULL;
-	
+	int i = 0;
+	GVariantIter *iter = 0;
+	GVariant *inner_gv = 0;
+
+	if (!check_access_control (invocation, AC_SMS, "w"))
+		return TRUE;
+
 	memset(&deliveryReport, 0, sizeof(struct treq_sms_set_delivery_report));
 
-	decoded_sca = g_base64_decode(arg_sca, &length);
-	memcpy(&(deliveryReport.dataInfo.sca[0]), decoded_sca, SMS_SMSP_ADDRESS_LEN);
+	inner_gv = g_variant_get_variant( arg_sca );
+	g_variant_get(inner_gv, "ay", &iter);
+	while( g_variant_iter_loop(iter, "y", &deliveryReport.dataInfo.sca[i] ) ) {
+		i++;
+		if( i >= SMS_SMSP_ADDRESS_LEN )
+			break;
+	}
+
+	i = 0;
+	inner_gv = g_variant_get_variant( arg_tpdu_data );
+	g_variant_get(inner_gv, "ay", &iter);
+	while( g_variant_iter_loop(iter, "y", &deliveryReport.dataInfo.tpduData[i] ) ) {
+		i++;
+		if( i >= SMS_SMDATA_SIZE_MAX + 1 )
+			break;
+	}
 
 	deliveryReport.dataInfo.msgLength = arg_tpdu_length;
-
-	decoded_tpdu = g_base64_decode(arg_tpdu_data, &length);
-	memcpy(&(deliveryReport.dataInfo.tpduData[0]), decoded_tpdu, SMS_SMDATA_SIZE_MAX + 1);
 
 	deliveryReport.rspType = arg_rpCause;
 
@@ -620,17 +708,13 @@ on_sms_set_delivery_report(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	tcore_user_request_set_data(ur, sizeof(struct treq_sms_set_delivery_report), &deliveryReport);
 	tcore_user_request_set_command(ur, TREQ_SMS_SET_DELIVERY_REPORT);
 
-	if(decoded_sca)
-		g_free(decoded_sca);
-
-	if(decoded_tpdu)
-		g_free(decoded_tpdu);
+	g_variant_iter_free(iter);
+	g_variant_unref(inner_gv);
 
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		//api_err = TAPI_API_OPERATION_FAILED;
-		err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
-		return  FALSE;
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref(ur);
 	}
 
 	return TRUE;
@@ -642,9 +726,12 @@ on_sms_set_msg_status(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	gint arg_msgStatus,
 	gpointer user_data)
 {
-        struct treq_sms_set_msg_status msgStatus = {0,};
+	struct treq_sms_set_msg_status msgStatus = {0,};
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
+
+	if (!check_access_control (invocation, AC_SMS, "w"))
+		return TRUE;
 
 	msgStatus.index = arg_index;
 	msgStatus.msgStatus = arg_msgStatus;
@@ -655,9 +742,8 @@ on_sms_set_msg_status(TelephonySms *sms, GDBusMethodInvocation *invocation,
 
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		//api_err = TAPI_API_OPERATION_FAILED;
-		err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
-		return  FALSE;
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref(ur);
 	}
 
 	return TRUE;
@@ -668,9 +754,12 @@ on_sms_get_sms_params(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	gint arg_index,
 	gpointer user_data)
 {
-        struct treq_sms_get_params getParams = {0,};
+	struct treq_sms_get_params getParams = {0,};
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
+
+	if (!check_access_control (invocation, AC_SMS, "r"))
+		return TRUE;
 
 	getParams.index = arg_index;
 
@@ -680,9 +769,8 @@ on_sms_get_sms_params(TelephonySms *sms, GDBusMethodInvocation *invocation,
 
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		//api_err = TAPI_API_OPERATION_FAILED;
-		err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
-		return  FALSE;
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref(ur);
 	}
 
 	return TRUE;
@@ -693,16 +781,16 @@ on_sms_set_sms_params(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	gint arg_recordIndex,
 	gint arg_recordLen,
 	gint arg_alphaIdLen,
-	const gchar *arg_alphaId,
+	GVariant *arg_alphaId,
 	gint arg_paramIndicator,
 	gint arg_destAddr_DialNumLen,
 	gint arg_destAddr_Ton,
 	gint arg_destAddr_Npi,
-	const gchar *arg_destAddr_DiallingNum,
+	GVariant *arg_destAddr_DiallingNum,
 	gint arg_svcCntrAddr_DialNumLen,
 	gint arg_SvcCntrAddr_Ton,
 	gint arg_svcCntrAddr_Npi,
-	const gchar *arg_svcCntrAddr_DialNum,
+	GVariant *arg_svcCntrAddr_DialNum,
 	gint arg_protocolId,
 	gint arg_dataCodingScheme,
 	gint arg_validityPeriod,
@@ -712,31 +800,54 @@ on_sms_set_sms_params(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 
-	gsize length;
-	guchar *decoded_alphaId = NULL;
-	guchar *decoded_destDialNum = NULL;
-	guchar *decoded_scaDialNum = NULL;
+	int i = 0;
+	GVariantIter *iter = 0;
+	GVariant *inner_gv = 0;
+
+	if (!check_access_control (invocation, AC_SMS, "w"))
+		return TRUE;
 
 	memset(&setParams, 0, sizeof(struct treq_sms_set_params));
 
 	setParams.params.recordIndex = arg_recordIndex;
 	setParams.params.recordLen = arg_recordLen;
 	setParams.params.alphaIdLen = arg_alphaIdLen;
-	decoded_alphaId = g_base64_decode(arg_alphaId, &length);
-	memcpy(&(setParams.params.szAlphaId[0]), decoded_alphaId, SMS_SMSP_ALPHA_ID_LEN_MAX + 1);
+
+	inner_gv = g_variant_get_variant( arg_alphaId );
+	g_variant_get(inner_gv, "ay", &iter);
+	while( g_variant_iter_loop(iter, "y", &setParams.params.szAlphaId[i] ) ) {
+		i++;
+		if( i >= SMS_SMSP_ALPHA_ID_LEN_MAX + 1 )
+			break;
+	}
+
 	setParams.params.paramIndicator = arg_paramIndicator;
 
 	setParams.params.tpDestAddr.dialNumLen = arg_destAddr_DialNumLen;
 	setParams.params.tpDestAddr.typeOfNum = arg_destAddr_Ton;
 	setParams.params.tpDestAddr.numPlanId = arg_destAddr_Npi;
-	decoded_destDialNum = g_base64_decode(arg_destAddr_DiallingNum, &length);
-	memcpy(&(setParams.params.tpDestAddr.diallingNum[0]), decoded_destDialNum, SMS_SMSP_ADDRESS_LEN + 1);
+
+	i = 0;
+	inner_gv = g_variant_get_variant( arg_destAddr_DiallingNum );
+	g_variant_get(inner_gv, "ay", &iter);
+	while( g_variant_iter_loop(iter, "y", &setParams.params.tpDestAddr.diallingNum[i] ) ) {
+		i++;
+		if( i >= SMS_SMSP_ADDRESS_LEN + 1 )
+			break;
+	}
 
 	setParams.params.tpSvcCntrAddr.dialNumLen = arg_svcCntrAddr_DialNumLen;
 	setParams.params.tpSvcCntrAddr.typeOfNum = arg_SvcCntrAddr_Ton;
 	setParams.params.tpSvcCntrAddr.numPlanId = arg_svcCntrAddr_Npi;
-	decoded_scaDialNum = g_base64_decode(arg_svcCntrAddr_DialNum, &length);	
-	memcpy(&(setParams.params.tpSvcCntrAddr.diallingNum[0]), decoded_scaDialNum, SMS_SMSP_ADDRESS_LEN + 1);
+
+	i = 0;
+	inner_gv = g_variant_get_variant( arg_svcCntrAddr_DialNum );
+	g_variant_get(inner_gv, "ay", &iter);
+	while( g_variant_iter_loop(iter, "y", &setParams.params.tpSvcCntrAddr.diallingNum[i] ) ) {
+		i++;
+		if( i >= SMS_SMSP_ADDRESS_LEN + 1 )
+			break;
+	}
 
 	setParams.params.tpProtocolId = arg_protocolId;
 	setParams.params.tpDataCodingScheme = arg_dataCodingScheme;
@@ -746,20 +857,13 @@ on_sms_set_sms_params(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	tcore_user_request_set_data(ur, sizeof(struct treq_sms_set_params), &setParams);
 	tcore_user_request_set_command(ur, TREQ_SMS_SET_PARAMS);
 
-	if(decoded_alphaId)
-		g_free(decoded_alphaId);
-
-	if(decoded_destDialNum)
-		g_free(decoded_destDialNum);
-
-	if(decoded_scaDialNum)
-		g_free(decoded_scaDialNum);
+	g_variant_iter_free(iter);
+	g_variant_unref(inner_gv);
 
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		//api_err = TAPI_API_OPERATION_FAILED;
-		err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
-		return  FALSE;
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref(ur);
 	}
 
 	return TRUE;
@@ -769,19 +873,20 @@ static gboolean
 on_sms_get_sms_param_cnt(TelephonySms *sms, GDBusMethodInvocation *invocation,
 	gpointer user_data)
 {
-        struct treq_sms_get_paramcnt getParamCnt;
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 
+	if (!check_access_control (invocation, AC_SMS, "r"))
+		return TRUE;
+
 	ur = MAKE_UR(ctx, sms, invocation);
-	tcore_user_request_set_data(ur, sizeof(struct treq_sms_get_paramcnt), &getParamCnt);
+	tcore_user_request_set_data(ur, 0, NULL);
 	tcore_user_request_set_command(ur, TREQ_SMS_GET_PARAMCNT);
 
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		//api_err = TAPI_API_OPERATION_FAILED;
-		err("[tcore_SMS] communicator_dispatch_request is fail [0x%x] !!!", ret);
-		return  FALSE;
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref(ur);
 	}
 
 	return TRUE;
@@ -795,14 +900,14 @@ on_sms_get_sms_ready_status(TelephonySms *sms, GDBusMethodInvocation *invocation
 	GSList *co_list = NULL;
 	CoreObject *co_sms = NULL;
 	TcorePlugin *plugin = NULL;
+	gboolean ready_status = FALSE;
 
-	dbg("Func Entrance");
-
-	plugin = tcore_server_find_plugin(ctx->server, TCORE_PLUGIN_DEFAULT);
+	plugin = tcore_server_find_plugin(ctx->server, GET_CP_NAME(invocation));
 	co_list = tcore_plugin_get_core_objects_bytype(plugin, CORE_OBJECT_TYPE_SMS);
 	if (!co_list) {
 		dbg("error- co_list is NULL");
-		return FALSE;
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		return TRUE;
 	}
 
 	co_sms = (CoreObject *)co_list->data;
@@ -810,10 +915,13 @@ on_sms_get_sms_ready_status(TelephonySms *sms, GDBusMethodInvocation *invocation
 
 	if (!co_sms) {
 		dbg("error- co_sms is NULL");
-		return FALSE;
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		return TRUE;
 	}
-	
-	telephony_sms_complete_get_sms_ready_status(sms, invocation, tcore_sms_get_ready_status(co_sms));
+
+	ready_status = tcore_sms_get_ready_status(co_sms);
+	dbg("ready_status = %d", ready_status);
+	telephony_sms_complete_get_sms_ready_status(sms, invocation, ready_status);
 
 	return TRUE;
 }
@@ -826,24 +934,95 @@ gboolean dbus_plugin_setup_sms_interface(TelephonyObjectSkeleton *object, struct
 	telephony_object_skeleton_set_sms(object, sms);
 	g_object_unref(sms);
 
-	g_signal_connect(sms, "handle-send-msg", G_CALLBACK (on_sms_send_msg), ctx);
-	g_signal_connect(sms, "handle-read-msg", G_CALLBACK (on_sms_read_msg), ctx);
-	g_signal_connect(sms, "handle-save-msg", G_CALLBACK (on_sms_save_msg), ctx);
-	g_signal_connect(sms, "handle-delete-msg", G_CALLBACK (on_sms_delete_msg), ctx);
-	g_signal_connect(sms, "handle-get-msg-count", G_CALLBACK (on_sms_get_msg_count), ctx);
-	g_signal_connect(sms, "handle-get-sca", G_CALLBACK (on_sms_get_sca), ctx);
-	g_signal_connect(sms, "handle-set-sca", G_CALLBACK (on_sms_set_sca), ctx);
-	g_signal_connect(sms, "handle-get-cb-config", G_CALLBACK (on_sms_get_cb_config), ctx);
-	g_signal_connect(sms, "handle-set-cb-config", G_CALLBACK (on_sms_set_cb_config), ctx);
-	g_signal_connect(sms, "handle-set-mem-status", G_CALLBACK (on_sms_set_mem_status), ctx);
-	g_signal_connect(sms, "handle-get-pref-bearer", G_CALLBACK (on_sms_get_pref_bearer), ctx);
-	g_signal_connect(sms, "handle-set-pref-bearer", G_CALLBACK (on_sms_set_pref_bearer), ctx);
-	g_signal_connect(sms, "handle-set-delivery-report", G_CALLBACK (on_sms_set_delivery_report), ctx);
-	g_signal_connect(sms, "handle-set-msg-status", G_CALLBACK (on_sms_set_msg_status), ctx);
-	g_signal_connect(sms, "handle-get-sms-params", G_CALLBACK (on_sms_get_sms_params), ctx);
-	g_signal_connect(sms, "handle-set-sms-params", G_CALLBACK (on_sms_set_sms_params), ctx);
-	g_signal_connect(sms, "handle-get-sms-param-cnt", G_CALLBACK (on_sms_get_sms_param_cnt), ctx);
-	g_signal_connect(sms, "handle-get-sms-ready-status", G_CALLBACK (on_sms_get_sms_ready_status), ctx);	
+	g_signal_connect(sms,
+			"handle-send-msg",
+			G_CALLBACK (on_sms_send_msg),
+			ctx);
+
+	g_signal_connect(sms,
+			"handle-read-msg",
+			G_CALLBACK (on_sms_read_msg),
+			ctx);
+
+	g_signal_connect(sms,
+			"handle-save-msg",
+			G_CALLBACK (on_sms_save_msg),
+			ctx);
+
+	g_signal_connect(sms,
+			"handle-delete-msg",
+			G_CALLBACK (on_sms_delete_msg),
+			ctx);
+
+	g_signal_connect(sms,
+			"handle-get-msg-count",
+			G_CALLBACK (on_sms_get_msg_count),
+			ctx);
+
+	g_signal_connect(sms,
+			"handle-get-sca",
+			G_CALLBACK (on_sms_get_sca),
+			ctx);
+
+	g_signal_connect(sms,
+			"handle-set-sca",
+			G_CALLBACK (on_sms_set_sca),
+			ctx);
+
+	g_signal_connect(sms,
+			"handle-get-cb-config",
+			G_CALLBACK (on_sms_get_cb_config),
+			ctx);
+
+	g_signal_connect(sms,
+			"handle-set-cb-config",
+			G_CALLBACK (on_sms_set_cb_config),
+			ctx);
+
+	g_signal_connect(sms,
+			"handle-set-mem-status",
+			G_CALLBACK (on_sms_set_mem_status),
+			ctx);
+
+	g_signal_connect(sms,
+		"handle-get-pref-bearer",
+		G_CALLBACK (on_sms_get_pref_bearer),
+		ctx);
+
+	g_signal_connect(sms,
+			"handle-set-pref-bearer",
+			G_CALLBACK (on_sms_set_pref_bearer),
+			ctx);
+
+	g_signal_connect(sms,
+			"handle-set-delivery-report",
+			G_CALLBACK (on_sms_set_delivery_report),
+			ctx);
+
+	g_signal_connect(sms,
+			"handle-set-msg-status",
+			G_CALLBACK (on_sms_set_msg_status),
+			ctx);
+
+	g_signal_connect(sms,
+			"handle-get-sms-params",
+			G_CALLBACK (on_sms_get_sms_params),
+			ctx);
+
+	g_signal_connect(sms,
+			"handle-set-sms-params",
+			G_CALLBACK (on_sms_set_sms_params),
+			ctx);
+
+	g_signal_connect(sms,
+			"handle-get-sms-param-cnt",
+			G_CALLBACK (on_sms_get_sms_param_cnt),
+			ctx);
+
+	g_signal_connect(sms,
+			"handle-get-sms-ready-status",
+			G_CALLBACK (on_sms_get_sms_ready_status),
+			ctx);
 
 	return TRUE;
 }
@@ -881,10 +1060,7 @@ gboolean dbus_plugin_sms_response(struct custom_data *ctx, UserRequest *ur, stru
 		case TRESP_SMS_SEND_UMTS_MSG: {
 			const struct tresp_sms_send_umts_msg *resp = data;
 
-
-			dbg("receive TRESP_SMS_SEND_UMTS_MSG");
-			dbg("resp->result = 0x%x", resp->result);
-
+			dbg("receive TRESP_SMS_SEND_UMTS_MSG (result:[0x%x])", resp->result);
 			telephony_sms_complete_send_msg(dbus_info->interface_object, dbus_info->invocation, resp->result);
 
 			}
@@ -893,59 +1069,48 @@ gboolean dbus_plugin_sms_response(struct custom_data *ctx, UserRequest *ur, stru
 		case TRESP_SMS_SEND_CDMA_MSG: {
 			const struct tresp_sms_send_cdma_msg *resp = data;
 
-			dbg("receive TRESP_SMS_SEND_CDMA_MSG");
-			dbg("resp->result = 0x%x", resp->result);
-#if 0
-			resp->result
-			resp->causeCode.ReplySeqNumber
-			resp->causeCode.ErrClass
-			resp->causeCode.Cause
-#endif
+			dbg("receive TRESP_SMS_SEND_CDMA_MSG (result:[0x%x])", resp->result);
 			}
 			break;
 
 		case TRESP_SMS_READ_MSG: {
 			const struct tresp_sms_read_msg *resp = data;
-			gchar *sca = NULL;
-			gchar *tpdu = NULL;			
+			GVariant *sca = 0, *packet_sca = 0;
+			GVariant *tpdu = 0, *packet_tpdu = 0;
+			GVariantBuilder b;
 
-			dbg("receive TRESP_SMS_READ_MSG");
-			dbg("resp->result = 0x%x", resp->result);
+			dbg("receive TRESP_SMS_READ_MSG (result:[0x%x])", resp->result);
+			g_variant_builder_init (&b, G_VARIANT_TYPE("ay"));
 
-			sca = g_base64_encode((const guchar *)&(resp->dataInfo.smsData.sca[0]), SMS_SMSP_ADDRESS_LEN);
-			if (sca == NULL) {
-				dbg("g_base64_encode: Failed to Enocde the SCA.");
-				sca = "";
+			for( i=0; i<SMS_SMSP_ADDRESS_LEN; i++) {
+				g_variant_builder_add(&b, "y", resp->dataInfo.smsData.sca[i] );
 			}
+			sca = g_variant_builder_end(&b);
 
-			tpdu = g_base64_encode((const guchar *)&(resp->dataInfo.smsData.tpduData[0]), SMS_SMDATA_SIZE_MAX + 1);
-			if (sca == NULL) {
-				dbg("g_base64_encode: Failed to Enocde the SCA.");
-				tpdu = "";
+			g_variant_builder_init (&b, G_VARIANT_TYPE("ay"));
+
+			for( i=0; i<SMS_SMDATA_SIZE_MAX + 1; i++) {
+				g_variant_builder_add(&b, "y", resp->dataInfo.smsData.tpduData[i] );
 			}
+			tpdu = g_variant_builder_end(&b);
 
-			telephony_sms_complete_read_msg(dbus_info->interface_object, dbus_info->invocation, 
-				resp->result, 
-				resp->dataInfo.msgStatus, 
-				sca, 
-				resp->dataInfo.smsData.msgLength, 
-				tpdu);
+			packet_sca = g_variant_new("v", sca);
+			packet_tpdu = g_variant_new("v", tpdu);
 
-			if (sca)
-				g_free(sca);
-
-			if (tpdu)
-				g_free(tpdu);
-
+			telephony_sms_complete_read_msg(dbus_info->interface_object, dbus_info->invocation,
+				resp->result,
+				resp->dataInfo.simIndex,
+				resp->dataInfo.msgStatus,
+				packet_sca,
+				resp->dataInfo.smsData.msgLength,
+				packet_tpdu);
 			}
 			break;
 
 		case TRESP_SMS_SAVE_MSG: {
 			const struct tresp_sms_save_msg *resp = data;
 
-			dbg("receive TRESP_SMS_SAVE_MSG");
-			dbg("resp->result = 0x%x", resp->result);
-
+			dbg("receive TRESP_SMS_SAVE_MSG (result:[0x%x])", resp->result);
 			telephony_sms_complete_save_msg (dbus_info->interface_object, dbus_info->invocation,
 				resp->result,
 				resp->index);
@@ -955,72 +1120,63 @@ gboolean dbus_plugin_sms_response(struct custom_data *ctx, UserRequest *ur, stru
 		case TRESP_SMS_DELETE_MSG: {
 			const struct tresp_sms_delete_msg *resp = data;
 
-			dbg("receive TRESP_SMS_DELETE_MSG");
-			dbg("resp->result = 0x%x", resp->result);
-
+			dbg("receive TRESP_SMS_DELETE_MSG (result:[0x%x])", resp->result);
 			telephony_sms_complete_delete_msg(dbus_info->interface_object, dbus_info->invocation,
-				resp->result);
+				resp->result, resp->index);
 
 			}
 			break;
 
 		case TRESP_SMS_GET_STORED_MSG_COUNT: {
 			const struct tresp_sms_get_storedMsgCnt *resp = data;
-			gchar *msgCnt = NULL;
+			GVariant *list;
+			GVariantBuilder b;
+			unsigned int loop_var;
 
-			dbg("receive TRESP_SMS_GET_STORED_MSG_COUNT");
-			dbg("resp->result = 0x%x", resp->result);
+			dbg("receive TRESP_SMS_GET_STORED_MSG_COUNT (result:[0x%x])", resp->result);
+			g_variant_builder_init (&b, G_VARIANT_TYPE("ai"));
 
-			msgCnt = g_base64_encode((const guchar *)&(resp->storedMsgCnt.indexList[0]), SMS_GSM_SMS_MSG_NUM_MAX + 1);
-			if (msgCnt == NULL) {
-				dbg("g_base64_encode: Failed to Enocde storedMsgCnt.indexList");
-				msgCnt = "";
+			for (loop_var=0; loop_var<resp->storedMsgCnt.totalCount; loop_var++) {
+				g_variant_builder_add(&b, "i", resp->storedMsgCnt.indexList[loop_var]);
 			}
+			list = g_variant_builder_end(&b);
 
 			telephony_sms_complete_get_msg_count(dbus_info->interface_object, dbus_info->invocation,
 				resp->result,
 				resp->storedMsgCnt.totalCount,
 				resp->storedMsgCnt.usedCount,
-				msgCnt);
-
-			if (msgCnt)
-				g_free(msgCnt);
+				list);
 			}
-
 			break;
 
 		case TRESP_SMS_GET_SCA: {
 			const struct tresp_sms_get_sca *resp = data;
-			gchar *sca = NULL;
+			GVariant *sca = 0, *packet_sca = 0;
+			GVariantBuilder b;
 
-			dbg("receive TRESP_SMS_GET_SCA");
-			dbg("resp->result = 0x%x", resp->result);
+			dbg("receive TRESP_SMS_GET_SCA (result:[0x%x])", resp->result);
+			g_variant_builder_init (&b, G_VARIANT_TYPE("ay"));
 
-			sca = g_base64_encode((const guchar *)&(resp->scaAddress.diallingNum[0]), SMS_SMSP_ADDRESS_LEN + 1);
-			if (sca == NULL) {
-				dbg("g_base64_encode: Failed to Enocde scaAddress.diallingNum");
-				sca = "";
+			for( i=0; i<SMS_SMSP_ADDRESS_LEN + 1; i++) {
+				g_variant_builder_add(&b, "y", resp->scaAddress.diallingNum[i] );
 			}
-			
+			sca = g_variant_builder_end(&b);
+
+			packet_sca = g_variant_new("v", sca);
+
 			telephony_sms_complete_get_sca(dbus_info->interface_object, dbus_info->invocation,
 				resp->result,
 				resp->scaAddress.typeOfNum,
 				resp->scaAddress.numPlanId,
 				resp->scaAddress.dialNumLen,
-				sca);
-
-			if (sca)
-				g_free(sca);
-
+				packet_sca);
 			}
 			break;
 
 		case TRESP_SMS_SET_SCA: {
 			const struct tresp_sms_set_sca *resp = data;
 
-			dbg("receive TRESP_SMS_SET_SCA");
-			dbg("resp->result = 0x%x", resp->result);
-
+			dbg("receive TRESP_SMS_SET_SCA (result:[0x%x])", resp->result);
 			telephony_sms_complete_set_sca(dbus_info->interface_object, dbus_info->invocation,
 				resp->result);
 
@@ -1032,9 +1188,7 @@ gboolean dbus_plugin_sms_response(struct custom_data *ctx, UserRequest *ur, stru
 			GVariant *result = NULL;
 			GVariantBuilder b;
 
-			dbg("receive TRESP_SMS_GET_CB_CONFIG");
-			dbg("resp->result = 0x%x", resp->result);
-
+			dbg("receive TRESP_SMS_GET_CB_CONFIG (result:[0x%x])", resp->result);
 			g_variant_builder_init(&b, G_VARIANT_TYPE("aa{sv}"));
 
 			for (i = 0; i < resp->cbConfig.msgIdRangeCount; i++) {
@@ -1045,17 +1199,17 @@ gboolean dbus_plugin_sms_response(struct custom_data *ctx, UserRequest *ur, stru
 					g_variant_builder_add(&b, "{sv}", "ToMsgId", g_variant_new_uint16(resp->cbConfig.msgIDs[i].net3gpp.toMsgId));
 				} else if( resp->cbConfig.net3gppType == SMS_NETTYPE_3GPP2) {
 					g_variant_builder_add(&b, "{sv}", "CBCategory", g_variant_new_uint16(resp->cbConfig.msgIDs[i].net3gpp2.cbCategory));
-					g_variant_builder_add(&b, "{sv}", "CBLanguage", g_variant_new_uint16(resp->cbConfig.msgIDs[i].net3gpp2.cbLanguage));				
+					g_variant_builder_add(&b, "{sv}", "CBLanguage", g_variant_new_uint16(resp->cbConfig.msgIDs[i].net3gpp2.cbLanguage));
 				} else {
 					dbg("Unknown 3gpp type");
 					return FALSE;
 				}
-			
+
 				g_variant_builder_add(&b, "{sv}", "Selected", g_variant_new_byte(resp->cbConfig.msgIDs[i].net3gpp.selected));
-			
+
 				g_variant_builder_close(&b);
 			}
-			
+
 			result = g_variant_builder_end(&b);
 
 			telephony_sms_complete_get_cb_config(dbus_info->interface_object, dbus_info->invocation,
@@ -1071,9 +1225,7 @@ gboolean dbus_plugin_sms_response(struct custom_data *ctx, UserRequest *ur, stru
 		case TRESP_SMS_SET_CB_CONFIG: {
 			const struct tresp_sms_set_cb_config *resp = data;
 
-			dbg("receive TRESP_SMS_SET_CB_CONFIG");
-			dbg("resp->result = 0x%x", resp->result);
-
+			dbg("receive TRESP_SMS_SET_CB_CONFIG (result:[0x%x])", resp->result);
 			telephony_sms_complete_set_cb_config(dbus_info->interface_object, dbus_info->invocation,
 				resp->result);
 
@@ -1083,9 +1235,7 @@ gboolean dbus_plugin_sms_response(struct custom_data *ctx, UserRequest *ur, stru
 		case TRESP_SMS_SET_MEM_STATUS: {
 			const struct tresp_sms_set_mem_status *resp = data;
 
-			dbg("receive TRESP_SMS_SET_MEM_STATUS");
-			dbg("resp->result = 0x%x", resp->result);
-
+			dbg("receive TRESP_SMS_SET_MEM_STATUS (result:[0x%x])", resp->result);
 			telephony_sms_complete_set_mem_status(dbus_info->interface_object, dbus_info->invocation,
 				resp->result);
 
@@ -1094,9 +1244,7 @@ gboolean dbus_plugin_sms_response(struct custom_data *ctx, UserRequest *ur, stru
 		case TRESP_SMS_GET_PREF_BEARER: {
 			const struct tresp_sms_get_pref_bearer *resp = data;
 
-			dbg("receive TRESP_SMS_GET_PREF_BEARER");
-			dbg("resp->result = 0x%x", resp->result);
-
+			dbg("receive TRESP_SMS_GET_PREF_BEARER (result:[0x%x])", resp->result);
 			telephony_sms_complete_get_pref_bearer(dbus_info->interface_object, dbus_info->invocation,
 				resp->result);
 
@@ -1106,9 +1254,7 @@ gboolean dbus_plugin_sms_response(struct custom_data *ctx, UserRequest *ur, stru
 		case TRESP_SMS_SET_PREF_BEARER: {
 			const struct tresp_sms_set_pref_bearer *resp = data;
 
-			dbg("receive TRESP_SMS_SET_PREF_BEARER");
-			dbg("resp->result = 0x%x", resp->result);
-
+			dbg("receive TRESP_SMS_SET_PREF_BEARER (result:[0x%x])", resp->result);
 			telephony_sms_complete_set_pref_bearer(dbus_info->interface_object, dbus_info->invocation,
 				resp->result);
 
@@ -1118,9 +1264,7 @@ gboolean dbus_plugin_sms_response(struct custom_data *ctx, UserRequest *ur, stru
 		case TRESP_SMS_SET_DELIVERY_REPORT: {
 			const struct tresp_sms_set_delivery_report *resp = data;
 
-			dbg("receive TRESP_SMS_SET_DELIVERY_REPORT");
-			dbg("resp->result = 0x%x", resp->result);
-
+			dbg("receive TRESP_SMS_SET_DELIVERY_REPORT (result:[0x%x])", resp->result);
 			telephony_sms_complete_set_delivery_report(dbus_info->interface_object, dbus_info->invocation,
 				resp->result);
 
@@ -1130,9 +1274,7 @@ gboolean dbus_plugin_sms_response(struct custom_data *ctx, UserRequest *ur, stru
 		case TRESP_SMS_SET_MSG_STATUS: {
 			const struct tresp_sms_set_mem_status *resp = data;
 
-			dbg("receive TRESP_SMS_SET_MSG_STATUS");
-			dbg("resp->result = 0x%x", resp->result);
-
+			dbg("receive TRESP_SMS_SET_MSG_STATUS (result:[0x%x])", resp->result);
 			telephony_sms_complete_set_msg_status(dbus_info->interface_object, dbus_info->invocation,
 				resp->result);
 
@@ -1141,68 +1283,59 @@ gboolean dbus_plugin_sms_response(struct custom_data *ctx, UserRequest *ur, stru
 
 		case TRESP_SMS_GET_PARAMS: {
 			const struct tresp_sms_get_params *resp = data;
-			gchar *alphaId = NULL;
-			gchar *destDialNum = NULL;
-			gchar *scaDialNum = NULL;
+			GVariant *alphaId = 0, *packet_alphaId = 0;
+			GVariant *destDialNum = 0, *packet_destDialNum = 0;
+			GVariant *scaDialNum = 0, *packet_scaDialNum = 0;
+			GVariantBuilder b;
 
-			dbg("receive TRESP_SMS_GET_PARAMS");
-			dbg("resp->result = 0x%x", resp->result);
-
-			alphaId = g_base64_encode((const guchar *)&(resp->paramsInfo.szAlphaId[0]), SMS_SMSP_ALPHA_ID_LEN_MAX + 1);
-			if (alphaId == NULL) {
-				dbg("g_base64_encode: Failed to Enocde paramsInfo.szAlphaId");
-				alphaId = "";
+			dbg("receive TRESP_SMS_GET_PARAMS (result:[0x%x])", resp->result);
+			g_variant_builder_init(&b, G_VARIANT_TYPE("ay"));
+			for( i=0; i<SMS_SMSP_ALPHA_ID_LEN_MAX + 1; i++) {
+				g_variant_builder_add(&b, "y", resp->paramsInfo.szAlphaId[i] );
 			}
+			alphaId = g_variant_builder_end(&b);
 
-			destDialNum = g_base64_encode((const guchar *)&(resp->paramsInfo.tpDestAddr.diallingNum[0]), SMS_SMSP_ADDRESS_LEN + 1);
-			if (alphaId == NULL) {
-				dbg("g_base64_encode: Failed to Enocde paramsInfo.tpDestAddr.diallingNum");
-				alphaId = "";
+			g_variant_builder_init(&b, G_VARIANT_TYPE("ay"));
+			for( i=0; i<SMS_SMSP_ADDRESS_LEN + 1; i++) {
+				g_variant_builder_add(&b, "y", resp->paramsInfo.tpDestAddr.diallingNum[i] );
 			}
+			destDialNum = g_variant_builder_end(&b);
 
-			scaDialNum = g_base64_encode((const guchar *)&(resp->paramsInfo.tpSvcCntrAddr.diallingNum[0]), SMS_SMSP_ADDRESS_LEN + 1);
-			if (alphaId == NULL) {
-				dbg("g_base64_encode: Failed to Enocde paramsInfo.tpSvcCntrAddr.diallingNum");
-				alphaId = "";
+			g_variant_builder_init(&b, G_VARIANT_TYPE("ay"));
+			for( i=0; i<SMS_SMSP_ADDRESS_LEN + 1; i++) {
+				g_variant_builder_add(&b, "y", resp->paramsInfo.tpSvcCntrAddr.diallingNum[i] );
 			}
+			scaDialNum = g_variant_builder_end(&b);
+
+			packet_alphaId = g_variant_new("v", alphaId);
+			packet_destDialNum = g_variant_new("v", destDialNum);
+			packet_scaDialNum = g_variant_new("v", scaDialNum);
 
 			telephony_sms_complete_get_sms_params(dbus_info->interface_object, dbus_info->invocation,
 				resp->result,
 				resp->paramsInfo.recordIndex,
 				resp->paramsInfo.recordLen,
 				resp->paramsInfo.alphaIdLen,
-				alphaId,
+				packet_alphaId,
 				resp->paramsInfo.paramIndicator,
 				resp->paramsInfo.tpDestAddr.dialNumLen,
 				resp->paramsInfo.tpDestAddr.typeOfNum,
 				resp->paramsInfo.tpDestAddr.numPlanId,
-				destDialNum,
+				packet_destDialNum,
 				resp->paramsInfo.tpSvcCntrAddr.dialNumLen,
 				resp->paramsInfo.tpSvcCntrAddr.typeOfNum,
 				resp->paramsInfo.tpSvcCntrAddr.numPlanId,
-				scaDialNum,
+				packet_scaDialNum,
 				resp->paramsInfo.tpProtocolId,
 				resp->paramsInfo.tpDataCodingScheme,
 				resp->paramsInfo.tpValidityPeriod);
-
-			if(alphaId)
-				g_free(alphaId);
-
-			if(destDialNum)
-				g_free(destDialNum);
-
-			if(scaDialNum)
-				g_free(scaDialNum);
-			
 			}
 			break;
 
 		case TRESP_SMS_SET_PARAMS:{
 			const struct tresp_sms_set_params *resp = data;
 
-			dbg("receive TRESP_SMS_SET_PARAMS");
-			dbg("resp->result = 0x%x", resp->result);
-
+			dbg("receive TRESP_SMS_SET_PARAMS (result:[0x%x])", resp->result);
 			telephony_sms_complete_set_sms_params(dbus_info->interface_object, dbus_info->invocation,
 				resp->result);
 
@@ -1212,9 +1345,7 @@ gboolean dbus_plugin_sms_response(struct custom_data *ctx, UserRequest *ur, stru
 		case TRESP_SMS_GET_PARAMCNT: {
 			const struct tresp_sms_get_paramcnt *resp = data;
 
-			dbg("receive TRESP_SMS_GET_PARAMCNT");
-			dbg("resp->result = 0x%x", resp->result);
-
+			dbg("receive TRESP_SMS_GET_PARAMCNT (result:[0x%x])", resp->result);
 			telephony_sms_complete_get_sms_param_cnt(dbus_info->interface_object, dbus_info->invocation,
 				resp->result,
 				resp->recordCount);
@@ -1229,297 +1360,118 @@ gboolean dbus_plugin_sms_response(struct custom_data *ctx, UserRequest *ur, stru
 	return TRUE;
 }
 
-gboolean dbus_plugin_sms_notification(struct custom_data *ctx, const char *plugin_name, TelephonyObjectSkeleton *object, enum tcore_notification_command command, unsigned int data_len, const void *data)
+gboolean dbus_plugin_sms_notification(struct custom_data *ctx, CoreObject *source, TelephonyObjectSkeleton *object, enum tcore_notification_command command, unsigned int data_len, const void *data)
 {
 	TelephonySms *sms;
+	const char *cp_name;
 
-	if (!object)
-	{
-		dbg("object is NULL");
-		return FALSE;
-	}
+	cp_name = tcore_server_get_cp_name_by_plugin(tcore_object_ref_plugin(source));
 
 	sms = telephony_object_peek_sms(TELEPHONY_OBJECT(object));
-	dbg("sms = %p", sms);
-
-	dbg("[tcore_SMS]notification !!! (command = 0x%x, data_len = %d)", command, data_len);
 
 	switch (command) {
 		case TNOTI_SMS_INCOM_MSG: {
 			const struct tnoti_sms_umts_msg *noti = data;
 
-			gchar *sca = NULL;
-			gchar *tpdu = NULL;			
+			GVariant *sca = 0, *packet_sca = 0;
+			GVariant *tpdu = 0, *packet_tpdu = 0;
+			GVariantBuilder b;
+			unsigned int i;
 
-			sca = g_base64_encode((const guchar *)&(noti->msgInfo.sca[0]), SMS_SMSP_ADDRESS_LEN);
-			if (sca == NULL) {
-				dbg("g_base64_encode: Failed to Enocde msgInfo.sca");
-				sca = "";
-			}
+			info("[DBUSINFO][%s] SMS_INCOM_MSG (len[%d])", cp_name, data_len);
 
-			tpdu = g_base64_encode((const guchar *)&(noti->msgInfo.tpduData[0]), SMS_SMDATA_SIZE_MAX + 1);
-			if (tpdu == NULL) {
-				dbg("g_base64_encode: Failed to Enocde msgInfo.tpduData");
-				tpdu = "";
+			g_variant_builder_init (&b, G_VARIANT_TYPE("ay"));
+			for( i=0; i<SMS_SMSP_ADDRESS_LEN; i++) {
+				g_variant_builder_add(&b, "y", noti->msgInfo.sca[i] );
 			}
-			
+			sca = g_variant_builder_end(&b);
+
+			g_variant_builder_init (&b, G_VARIANT_TYPE("ay"));
+			for( i=0; i<SMS_SMDATA_SIZE_MAX + 1; i++) {
+				g_variant_builder_add(&b, "y", noti->msgInfo.tpduData[i] );
+			}
+			tpdu = g_variant_builder_end(&b);
+
+			packet_sca = g_variant_new("v", sca);
+			packet_tpdu = g_variant_new("v", tpdu);
+
 			telephony_sms_emit_incomming_msg(sms,
-				sca,
+				packet_sca,
 				noti->msgInfo.msgLength,
-				tpdu);
-
-			if(sca)
-				g_free(sca);
-
-			if(tpdu)
-				g_free(tpdu);
-
+				packet_tpdu);
 			}
 			break;
 
 		case TNOTI_SMS_CB_INCOM_MSG: {
 			const struct tnoti_sms_cellBroadcast_msg *noti = data;
-			gchar *msgData = NULL;
-			
-			msgData = g_base64_encode((const guchar *)&(noti->cbMsg.msgData[0]), SMS_SMSP_ADDRESS_LEN);
-			if (msgData == NULL) {
-				dbg("g_base64_encode: Failed to Enocde cbMsg.msgData");
-				msgData = "";
+			GVariant *msgData = 0, *packet_msgData = 0;
+			GVariantBuilder b;
+			int i;
+
+			info("[DBUSINFO][%s] SMS_CB_INCOM_MSG (len[%d])", cp_name, data_len);
+
+			g_variant_builder_init (&b, G_VARIANT_TYPE("ay"));
+
+			for( i=0; i < (int)noti->cbMsg.length + 1; i++) {
+				g_variant_builder_add(&b, "y", noti->cbMsg.msgData[i] );
 			}
+			msgData = g_variant_builder_end(&b);
+			packet_msgData = g_variant_new("v", msgData);
 
 			telephony_sms_emit_incomming_cb_msg(sms,
 				noti->cbMsg.cbMsgType,
 				noti->cbMsg.length,
-				msgData);
-
-			if(msgData)
-				g_free(msgData);
-
+				packet_msgData);
 			}
 			break;
 
 		case TNOTI_SMS_ETWS_INCOM_MSG: {
 			const struct tnoti_sms_etws_msg *noti = data;
-			gchar *msgData = NULL;
-			
-			msgData = g_base64_encode((const guchar *)&(noti->etwsMsg.msgData[0]), SMS_SMSP_ADDRESS_LEN);
-			if (msgData == NULL) {
-				dbg("g_base64_encode: Failed to Enocde etwsMsg.msgData");
-				msgData = "";
+			GVariant *msgData = 0, *packet_msgData = 0;
+			GVariantBuilder b;
+			unsigned int i;
+
+			info("[DBUSINFO][%s] ETWS_INCOM_MSG (len[%d])", cp_name, data_len);
+
+			g_variant_builder_init (&b, G_VARIANT_TYPE("ay"));
+
+			for( i=0; i<SMS_ETWS_SIZE_MAX + 1; i++) {
+				g_variant_builder_add(&b, "y", noti->etwsMsg.msgData[i] );
 			}
+			msgData = g_variant_builder_end(&b);
+			packet_msgData = g_variant_new("v", msgData);
 
 			telephony_sms_emit_incomming_etws_msg(sms,
 				noti->etwsMsg.etwsMsgType,
 				noti->etwsMsg.length,
-				msgData);
-
-			if(msgData)
-				g_free(msgData);
+				packet_msgData);
 			}
 			break;
 
 		case TNOTI_SMS_INCOM_EX_MSG: {
-#if 0
-			noti->cdmaMsg.ParamMask), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgType), SIPC_MARSHAL_DATA_INT_TYPE);
-
-			switch(noti->cdmaMsg.MsgType)
-			{
-				case SMS_MESSAGETYPE_DELIVER:
-					/* Origination address */
-					noti->cdmaMsg.MsgData.inDeliver.OrigAddr.Digit), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.OrigAddr.NumberMode), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.OrigAddr.NumberType), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.OrigAddr.NumberPlan), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.OrigAddr.szAddrLength), SIPC_MARSHAL_DATA_CHAR_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.OrigAddr.szAddress[0]), SIPC_MARSHAL_DATA_STRING_TYPE);
-
-					/* Origination subaddress */
-					noti->cdmaMsg.MsgData.inDeliver.OrigSubAddr.SubType), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.OrigSubAddr.Odd), SIPC_MARSHAL_DATA_CHAR_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.OrigSubAddr.szAddrLength), SIPC_MARSHAL_DATA_CHAR_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.OrigSubAddr.szAddress[0]), SIPC_MARSHAL_DATA_STRING_TYPE);
-
-					noti->cdmaMsg.MsgData.inDeliver.TeleService), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.bBearerReplySeqRequest), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.ReplySeqNumber), SIPC_MARSHAL_DATA_CHAR_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.MsgId), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.MsgEncoding), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.MsgLength), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.szData[0]), SIPC_MARSHAL_DATA_STRING_TYPE);
-
-					/* Message center time stamp */
-					void *)&(noti->cdmaMsg.MsgData.inDeliver.MessageCenterTimeStamp.year), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.MessageCenterTimeStamp.month), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.MessageCenterTimeStamp.day), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.MessageCenterTimeStamp.hours), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.MessageCenterTimeStamp.minutes), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.MessageCenterTimeStamp.seconds), SIPC_MARSHAL_DATA_INT_TYPE);
-
-					/* Validity period - Absolute */
-					noti->cdmaMsg.MsgData.inDeliver.ValidityPeriodAbs.year), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.ValidityPeriodAbs.month), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.ValidityPeriodAbs.day), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.ValidityPeriodAbs.hours), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.ValidityPeriodAbs.minutes), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.ValidityPeriodAbs.seconds), SIPC_MARSHAL_DATA_INT_TYPE);
-
-					noti->cdmaMsg.MsgData.inDeliver.ValidityPeriodRel), SIPC_MARSHAL_DATA_CHAR_TYPE);
-
-					/* Deferred delivery time - Absolute (not supported) */
-					noti->cdmaMsg.MsgData.inDeliver.DeferredDelTimeAbs.year), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.DeferredDelTimeAbs.month), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.DeferredDelTimeAbs.day), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.DeferredDelTimeAbs.hours), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.DeferredDelTimeAbs.minutes), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.DeferredDelTimeAbs.seconds), SIPC_MARSHAL_DATA_INT_TYPE);
-
-					/* Deferred delivery time - Relative (not supported) */
-					noti->cdmaMsg.MsgData.inDeliver.DeferredDelTimeRel), SIPC_MARSHAL_DATA_CHAR_TYPE);
-
-					noti->cdmaMsg.MsgData.inDeliver.Priority), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.Privacy), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.NumMsg), SIPC_MARSHAL_DATA_CHAR_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.bUserAckRequest), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.bDeliveryAckRequest), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.AlertPriority), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.MsgLang), SIPC_MARSHAL_DATA_INT_TYPE);
-
-					/* Callback number address */
-					noti->cdmaMsg.MsgData.inDeliver.CallBackNumer.Digit), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.CallBackNumer.NumberMode), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.CallBackNumer.NumberType), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.CallBackNumer.NumberPlan), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.CallBackNumer.szAddrLength), SIPC_MARSHAL_DATA_CHAR_TYPE);
-					noti->cdmaMsg.MsgData.inDeliver.CallBackNumer.szAddress[0]), SIPC_MARSHAL_DATA_STRING_TYPE);
-
-					noti->cdmaMsg.MsgData.inDeliver.Display), SIPC_MARSHAL_DATA_INT_TYPE);
-
-					break;
-
-				case SMS_MESSAGETYPE_DELIVERY_ACK:
-					/* Origination address */
-					noti->cdmaMsg.MsgData.inAck.OrigAddr.Digit), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inAck.OrigAddr.NumberMode), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inAck.OrigAddr.NumberType), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inAck.OrigAddr.NumberPlan), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inAck.OrigAddr.szAddrLength), SIPC_MARSHAL_DATA_CHAR_TYPE);
-					noti->cdmaMsg.MsgData.inAck.OrigAddr.szAddress[0]), SIPC_MARSHAL_DATA_STRING_TYPE);
-
-					/* Origination subaddress */
-					noti->cdmaMsg.MsgData.inAck.OrigSubAddr.SubType), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inAck.OrigSubAddr.Odd), SIPC_MARSHAL_DATA_CHAR_TYPE);
-					noti->cdmaMsg.MsgData.inAck.OrigSubAddr.szAddrLength), SIPC_MARSHAL_DATA_CHAR_TYPE);
-					noti->cdmaMsg.MsgData.inAck.OrigSubAddr.szAddress), SIPC_MARSHAL_DATA_CHAR_TYPE);
-
-					noti->cdmaMsg.MsgData.inAck.TeleService), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inAck.bBearerReplySeqRequest), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inAck.ReplySeqNumber), SIPC_MARSHAL_DATA_CHAR_TYPE);
-					noti->cdmaMsg.MsgData.inAck.MsgId), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inAck.MsgEncoding), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inAck.MsgLength), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inAck.szData[0]), SIPC_MARSHAL_DATA_STRING_TYPE);
-
-					noti->cdmaMsg.MsgData.inAck.UserResponseCode), SIPC_MARSHAL_DATA_CHAR_TYPE);
-
-					/* Message center time stamp */
-					noti->cdmaMsg.MsgData.inAck.MessageCenterTimeStamp.year), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inAck.MessageCenterTimeStamp.month), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inAck.MessageCenterTimeStamp.day), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inAck.MessageCenterTimeStamp.hours), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inAck.MessageCenterTimeStamp.minutes), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inAck.MessageCenterTimeStamp.seconds), SIPC_MARSHAL_DATA_INT_TYPE);
-
-					break;
-
-				case SMS_MESSAGETYPE_USER_ACK:
-					/* Origination address */
-					noti->cdmaMsg.MsgData.inDeliverAck.OrigAddr.Digit), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.OrigAddr.NumberMode), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.OrigAddr.NumberType), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.OrigAddr.NumberPlan), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.OrigAddr.szAddrLength), SIPC_MARSHAL_DATA_CHAR_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.OrigAddr.szAddress[0]), SIPC_MARSHAL_DATA_STRING_TYPE);
-
-					/* Origination subaddress */
-					noti->cdmaMsg.MsgData.inDeliverAck.OrigSubAddr.SubType), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.OrigSubAddr.Odd), SIPC_MARSHAL_DATA_CHAR_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.OrigSubAddr.szAddrLength), SIPC_MARSHAL_DATA_CHAR_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.OrigSubAddr.szAddress), SIPC_MARSHAL_DATA_CHAR_TYPE);
-
-					noti->cdmaMsg.MsgData.inDeliverAck.TeleService), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.bBearerReplySeqRequest), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.ReplySeqNumber), SIPC_MARSHAL_DATA_CHAR_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.MsgId), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.MsgEncoding), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.MsgLength), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.szData[0]), SIPC_MARSHAL_DATA_STRING_TYPE);
-
-					/* Message center time stamp */
-					noti->cdmaMsg.MsgData.inDeliverAck.MessageCenterTimeStamp.year), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.MessageCenterTimeStamp.month), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.MessageCenterTimeStamp.day), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.MessageCenterTimeStamp.hours), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.MessageCenterTimeStamp.minutes), SIPC_MARSHAL_DATA_INT_TYPE);
-					noti->cdmaMsg.MsgData.inDeliverAck.MessageCenterTimeStamp.seconds), SIPC_MARSHAL_DATA_INT_TYPE);
-
-					break;
-				default:
-					break;
-			}
-#endif
+			info("[DBUSINFO][%s] SMS_INCOM_EX_MSG (len[%d])", cp_name, data_len);
 			}
 			break;
 
 		case TNOTI_SMS_CB_INCOM_EX_MSG: {
-#if 0
-			noti->cdmaMsg.MsgData.inBc.ServiceCategory), SIPC_MARSHAL_DATA_INT_TYPE);
-
-			noti->cdmaMsg.MsgData.inBc.MsgId), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.bBearerReplySeqRequest), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.ReplySeqNumber), SIPC_MARSHAL_DATA_CHAR_TYPE);
-			noti->cdmaMsg.MsgData.inBc.MsgEncoding), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.MsgLength), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.szData[0]), SIPC_MARSHAL_DATA_STRING_TYPE);
-
-			/* Message center time stamp */
-			noti->cdmaMsg.MsgData.inBc.MessageCenterTimeStamp.year), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.MessageCenterTimeStamp.month), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.MessageCenterTimeStamp.day), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.MessageCenterTimeStamp.hours), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.MessageCenterTimeStamp.minutes), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.MessageCenterTimeStamp.seconds), SIPC_MARSHAL_DATA_INT_TYPE);
-
-			/* Validity period - Absolute */
-			noti->cdmaMsg.MsgData.inBc.ValidityPeriodAbs.year), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.ValidityPeriodAbs.month), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.ValidityPeriodAbs.day), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.ValidityPeriodAbs.hours), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.ValidityPeriodAbs.minutes), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.ValidityPeriodAbs.seconds), SIPC_MARSHAL_DATA_INT_TYPE);
-
-			noti->cdmaMsg.MsgData.inBc.ValidityPeriodRel), SIPC_MARSHAL_DATA_CHAR_TYPE);
-
-			noti->cdmaMsg.MsgData.inBc.Priority), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.AlertPriority), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.MsgLang), SIPC_MARSHAL_DATA_INT_TYPE);
-			noti->cdmaMsg.MsgData.inBc.Display), SIPC_MARSHAL_DATA_INT_TYPE);
-
-#endif
+			info("[DBUSINFO][%s] CB_INCOM_EX_MSG (len[%d])", cp_name, data_len);
 			}
 			break;
 
 		case TNOTI_SMS_MEMORY_STATUS: {
 			const struct tnoti_sms_memory_status *noti = data;
-
+			info("[DBUSINFO][%s] SMS_MEMORY_STATUS (%d)", cp_name, noti->status);
 			telephony_sms_emit_memory_status(sms, noti->status);
-
 			}
 			break;
 
 		case TNOTI_SMS_DEVICE_READY: {
 			const struct tnoti_sms_ready_status *noti = data;
-
+			info("[DBUSINFO][%s] SMS_DEVICE_READY (%d)", cp_name, noti->status);
+#ifdef ENABLE_KPI_LOGS
+			if (noti->status == TRUE)
+				TIME_CHECK("[%s] SMS Service Ready", cp_name);
+#endif
 			telephony_sms_emit_sms_ready(sms, noti->status);
 
 			}

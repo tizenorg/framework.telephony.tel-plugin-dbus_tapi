@@ -1,3 +1,23 @@
+/*
+ * tel-plugin-dbus-tapi
+ *
+ * Copyright (c) 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ *
+ * Contact: Ja-young Gu <jygu@samsung.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
@@ -5,7 +25,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <glib.h>
-#include <glib-object.h>
 #include <gio/gio.h>
 
 #include <tcore.h>
@@ -21,35 +40,40 @@
 #include "generated-code.h"
 #include "common.h"
 
+
 static gboolean
-on_modem_set_power (TelephonyModem *modem,
-		GDBusMethodInvocation *invocation,
-		gint mode,
-		gpointer user_data)
+on_modem_set_power (TelephonyModem *modem, GDBusMethodInvocation *invocation,
+	gint mode, gpointer user_data)
 {
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
+	enum tcore_request_command command;
 	TReturn ret = TCORE_RETURN_SUCCESS;
 
+	if (!check_access_control (invocation, AC_MODEM, "x"))
+		return TRUE;
+
 	ur = MAKE_UR(ctx, modem, invocation);
-	tcore_user_request_set_data(ur, 0, NULL);
 
 	switch (mode) {
-		case 0:
-			tcore_user_request_set_command(ur, TREQ_MODEM_POWER_OFF);
-			break;
-		case 1:
-			tcore_user_request_set_command(ur, TREQ_MODEM_POWER_ON);
-			break;
-		case 2:
-			tcore_user_request_set_command(ur, TREQ_MODEM_POWER_RESET);
-			break;
-		default:
-			ret = TCORE_RETURN_EINVAL;
-			goto ERR;
-			break;
+	case MODEM_STATE_ONLINE:
+		command = TREQ_MODEM_POWER_ON;
+	break;
+	case MODEM_STATE_OFFLINE:
+		command = TREQ_MODEM_POWER_OFF;
+	break;
+	case MODEM_STATE_RESET:
+		command = TREQ_MODEM_POWER_RESET;
+	break;
+	case MODEM_STATE_LOW:
+		command = TREQ_MODEM_POWER_LOW;
+	break;
+	default:
+		ret = TCORE_RETURN_EINVAL;
+		goto ERR;
 	}
 
+	tcore_user_request_set_command(ur, command);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS)
 		goto ERR;
@@ -57,30 +81,56 @@ on_modem_set_power (TelephonyModem *modem,
 	return TRUE;
 
 ERR:
-	telephony_modem_complete_set_power(modem, invocation, ret);
+	FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+	tcore_user_request_unref(ur);
 
 	return TRUE;
 }
 
 static gboolean
-on_modem_set_flight_mode (TelephonyModem *modem,
-		GDBusMethodInvocation *invocation,
-		gboolean enable,
-		gpointer user_data)
+on_modem_set_flight_mode (TelephonyModem *modem, GDBusMethodInvocation *invocation,
+	gboolean enable, gpointer user_data)
 {
 	struct treq_modem_set_flightmode data;
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 	TReturn ret;
 
+	if (!check_access_control (invocation, AC_MODEM, "w"))
+		return TRUE;
+
 	data.enable = enable;
 
 	ur = MAKE_UR(ctx, modem, invocation);
-	tcore_user_request_set_data(ur, sizeof(struct treq_modem_set_flightmode), &data);
-	tcore_user_request_set_command(ur, TREQ_MODEM_SET_FLIGHTMODE);
+	tcore_user_request_set_data (ur, sizeof(struct treq_modem_set_flightmode), &data);
+	tcore_user_request_set_command (ur, TREQ_MODEM_SET_FLIGHTMODE);
+
+	ret = tcore_communicator_dispatch_request (ctx->comm, ur);
+	if (ret != TCORE_RETURN_SUCCESS) {
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
+		tcore_user_request_unref (ur);
+	}
+
+	return TRUE;
+}
+
+static gboolean
+on_modem_get_flight_mode (TelephonyModem *modem, GDBusMethodInvocation *invocation,
+	gpointer user_data)
+{
+	struct custom_data *ctx = user_data;
+	UserRequest *ur = NULL;
+	TReturn ret;
+
+	if (!check_access_control (invocation, AC_MODEM, "r"))
+		return TRUE;
+
+	ur = MAKE_UR(ctx, modem, invocation);
+	tcore_user_request_set_data(ur, 0, NULL);
+	tcore_user_request_set_command(ur, TREQ_MODEM_GET_FLIGHTMODE);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		telephony_modem_complete_set_flight_mode(modem, invocation, ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		tcore_user_request_unref(ur);
 	}
 
@@ -88,21 +138,21 @@ on_modem_set_flight_mode (TelephonyModem *modem,
 }
 
 static gboolean
-on_modem_get_version (TelephonyModem *modem,
-		GDBusMethodInvocation *invocation,
-		gpointer user_data)
+on_modem_get_version (TelephonyModem *modem, GDBusMethodInvocation *invocation,
+	gpointer user_data)
 {
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 	TReturn ret;
+
+	if (!check_access_control (invocation, AC_MODEM, "r"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, modem, invocation);
 	tcore_user_request_set_command(ur, TREQ_MODEM_GET_VERSION);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		telephony_modem_complete_get_version(modem, invocation,
-				ret,
-				NULL, NULL, NULL, NULL);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		tcore_user_request_unref(ur);
 	}
 
@@ -110,19 +160,21 @@ on_modem_get_version (TelephonyModem *modem,
 }
 
 static gboolean
-on_modem_get_serial_number (TelephonyModem *modem,
-		GDBusMethodInvocation *invocation,
-		gpointer user_data)
+on_modem_get_serial_number (TelephonyModem *modem, GDBusMethodInvocation *invocation,
+	gpointer user_data)
 {
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 	TReturn ret;
+
+	if (!check_access_control (invocation, AC_MODEM, "r"))
+		return TRUE;
 
 	ur = MAKE_UR(ctx, modem, invocation);
 	tcore_user_request_set_command(ur, TREQ_MODEM_GET_SN);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		telephony_modem_complete_get_serial_number(modem, invocation, ret, NULL);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		tcore_user_request_unref(ur);
 	}
 
@@ -130,19 +182,21 @@ on_modem_get_serial_number (TelephonyModem *modem,
 }
 
 static gboolean
-on_modem_get_imei (TelephonyModem *modem,
-		GDBusMethodInvocation *invocation,
-		gpointer user_data)
+on_modem_get_imei (TelephonyModem *modem, GDBusMethodInvocation *invocation,
+	gpointer user_data)
 {
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 	TReturn ret;
 
+	if (!check_access_control (invocation, AC_MODEM, "r"))
+		return TRUE;
+
 	ur = MAKE_UR(ctx, modem, invocation);
 	tcore_user_request_set_command(ur, TREQ_MODEM_GET_IMEI);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		telephony_modem_complete_get_imei(modem, invocation, ret, NULL);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		tcore_user_request_unref(ur);
 	}
 
@@ -150,12 +204,15 @@ on_modem_get_imei (TelephonyModem *modem,
 }
 
 static gboolean on_modem_set_dun_pin_ctrl (TelephonyModem *modem, GDBusMethodInvocation *invocation,
-		gint arg_signal, gboolean arg_status, gpointer user_data)
+	gint arg_signal, gboolean arg_status, gpointer user_data)
 {
 	struct treq_modem_set_dun_pin_control data;
 	struct custom_data *ctx = user_data;
 	UserRequest *ur = NULL;
 	TReturn ret;
+
+	if (!check_access_control (invocation, AC_MODEM, "x"))
+		return TRUE;
 
 	data.signal = arg_signal;
 	data.status = arg_status;
@@ -165,7 +222,7 @@ static gboolean on_modem_set_dun_pin_ctrl (TelephonyModem *modem, GDBusMethodInv
 	tcore_user_request_set_command(ur, TREQ_MODEM_SET_DUN_PIN_CONTROL);
 	ret = tcore_communicator_dispatch_request(ctx->comm, ur);
 	if (ret != TCORE_RETURN_SUCCESS) {
-		telephony_modem_complete_set_dun_pin_ctrl(modem, invocation, ret);
+		FAIL_RESPONSE (invocation, DEFAULT_MSG_REQ_FAILED);
 		tcore_user_request_unref(ur);
 	}
 
@@ -180,6 +237,8 @@ gboolean dbus_plugin_setup_modem_interface(TelephonyObjectSkeleton *object, stru
 	telephony_object_skeleton_set_modem(object, modem);
 	g_object_unref(modem);
 
+	dbg("modem: [%p]", modem);
+
 	g_signal_connect (modem,
 			"handle-set-power",
 			G_CALLBACK (on_modem_set_power),
@@ -188,6 +247,11 @@ gboolean dbus_plugin_setup_modem_interface(TelephonyObjectSkeleton *object, stru
 	g_signal_connect (modem,
 			"handle-set-flight-mode",
 			G_CALLBACK (on_modem_set_flight_mode),
+			ctx);
+
+	g_signal_connect (modem,
+			"handle-get-flight-mode",
+			G_CALLBACK (on_modem_get_flight_mode),
 			ctx);
 
 	g_signal_connect (modem,
@@ -210,108 +274,191 @@ gboolean dbus_plugin_setup_modem_interface(TelephonyObjectSkeleton *object, stru
 			G_CALLBACK (on_modem_set_dun_pin_ctrl),
 			ctx);
 
+	telephony_modem_set_power(modem, MODEM_STATE_UNKNOWN);
 
 	return TRUE;
 }
 
-gboolean dbus_plugin_modem_response(struct custom_data *ctx, UserRequest *ur, struct dbus_request_info *dbus_info, enum tcore_response_command command, unsigned int data_len, const void *data)
+gboolean dbus_plugin_modem_response(struct custom_data *ctx, UserRequest *ur,
+	struct dbus_request_info *dbus_info, enum tcore_response_command command,
+	unsigned int data_len, const void *data)
 {
-	const struct tresp_modem_set_flightmode *resp_set_flight_mode = data;
-	const struct tresp_modem_set_dun_pin_control *resp_dun_pin_ctrl = data;
-	const struct tresp_modem_get_imei *resp_get_imei = data;
-	const struct tresp_modem_get_sn *resp_get_sn = data;
-	const struct tresp_modem_get_version *resp_get_version = data;
+	dbg("Response!!! Command: [0x%x] CP Name: [%s]",
+		command, GET_CP_NAME(dbus_info->invocation));
 
 	switch (command) {
-		case TRESP_MODEM_SET_FLIGHTMODE:
-			dbg("receive TRESP_MODEM_SET_FLIGHTMODE");
-			dbg("resp->result = %d", resp_set_flight_mode->result);
-			telephony_modem_complete_set_flight_mode(dbus_info->interface_object, dbus_info->invocation, resp_set_flight_mode->result);
-			break;
+	case TRESP_MODEM_SET_FLIGHTMODE: {
+		const struct tresp_modem_set_flightmode *resp_set_flight_mode = data;
+		int info_set_flight_mode = 3;	/* TAPI_POWER_FLIGHT_MODE_RESP_FAIL */
 
-		case TRESP_MODEM_POWER_ON:
-			dbg("receive TRESP_MODEM_POWER_ON");
-			telephony_modem_complete_set_power(dbus_info->interface_object, dbus_info->invocation, 0);
-			break;
+		dbg("TRESP_MODEM_SET_FLIGHTMODE - Result: [%s]",
+			(resp_set_flight_mode->result == TCORE_RETURN_SUCCESS ? "Success" : "Fail"));
 
-		case TRESP_MODEM_POWER_OFF:
-			dbg("receive TRESP_MODEM_POWER_OFF");
-			telephony_modem_complete_set_power(dbus_info->interface_object, dbus_info->invocation, 0);
-			break;
+		if (resp_set_flight_mode->result == TCORE_RETURN_SUCCESS) {
+			const struct treq_modem_set_flightmode *treq_data;
+			treq_data = tcore_user_request_ref_data(ur, NULL);
+			if (treq_data == NULL) {
+				warn("No Request data!!!");
+				info_set_flight_mode = 3;	/* TAPI_POWER_FLIGHT_MODE_RESP_FAIL */
+			}
+			else if (treq_data->enable == TRUE) {
+				info_set_flight_mode = 1;	/* TAPI_POWER_FLIGHT_MODE_RESP_ON */
+			} else {
+				info_set_flight_mode = 2;	/* TAPI_POWER_FLIGHT_MODE_RESP_OFF */
+			}
+		}
+		dbg("Set Flight mode: [%s]", (info_set_flight_mode == 1 ? "ON"
+			: (info_set_flight_mode == 2 ? "OFF" : "Request FAIL")));
 
-		case TRESP_MODEM_POWER_RESET:
-			dbg("receive TRESP_MODEM_POWER_RESET");
-			telephony_modem_complete_set_power(dbus_info->interface_object, dbus_info->invocation, 0);
-			break;
+		telephony_modem_complete_set_flight_mode(dbus_info->interface_object, dbus_info->invocation,
+			info_set_flight_mode);
+	}
+	break;
 
-		case TRESP_MODEM_GET_IMEI:
-			dbg("receive TRESP_MODEM_GET_IMEI");
-			telephony_modem_complete_get_imei(dbus_info->interface_object, dbus_info->invocation, resp_get_imei->result, resp_get_imei->imei);
-			break;
+	case TRESP_MODEM_GET_FLIGHTMODE: {
+		const struct tresp_modem_get_flightmode *resp_get_flight_mode = data;
 
-		case TRESP_MODEM_GET_SN:
-			dbg("receive TRESP_MODEM_GET_SN");
-			telephony_modem_complete_get_serial_number(dbus_info->interface_object, dbus_info->invocation, resp_get_sn->result, resp_get_sn->sn);
-			break;
+		dbg("TRESP_MODEM_GET_FLIGHTMODE - Result: [%s]",
+			(resp_get_flight_mode->result == TCORE_RETURN_SUCCESS ? "Success" : "Fail"));
 
-		case TRESP_MODEM_GET_VERSION:
-			dbg("receive TRESP_MODEM_GET_VERSION");
-			telephony_modem_complete_get_version(dbus_info->interface_object, dbus_info->invocation,
-					resp_get_version->result,
-					resp_get_version->software,
-					resp_get_version->hardware,
-					resp_get_version->calibration,
-					resp_get_version->product_code);
-			break;
+		telephony_modem_complete_get_flight_mode(dbus_info->interface_object, dbus_info->invocation,
+			resp_get_flight_mode->enable, resp_get_flight_mode->result);
+	}
+	break;
 
-		case TRESP_MODEM_SET_DUN_PIN_CONTROL:
-			dbg("receive TRESP_MODEM_SET_DUN_PIN_CONTROL");
-			dbg("resp->result = %d", resp_dun_pin_ctrl->result);
-			telephony_modem_complete_set_dun_pin_ctrl(dbus_info->interface_object, dbus_info->invocation, resp_dun_pin_ctrl->result);
-			break;
+	case TRESP_MODEM_POWER_ON: {
+		dbg("TRESP_MODEM_POWER_ON");
 
-		default:
-			dbg("not handled command[%d]", command);
-		break;
+		telephony_modem_complete_set_power(dbus_info->interface_object, dbus_info->invocation, 0);
+	}
+	break;
+
+	case TRESP_MODEM_POWER_OFF: {
+		dbg("TRESP_MODEM_POWER_OFF");
+
+		telephony_modem_complete_set_power(dbus_info->interface_object, dbus_info->invocation, 0);
+	}
+	break;
+
+	case TRESP_MODEM_POWER_RESET: {
+		dbg("TRESP_MODEM_POWER_RESET");
+
+		telephony_modem_complete_set_power(dbus_info->interface_object, dbus_info->invocation, 0);
+	}
+	break;
+
+	case TRESP_MODEM_POWER_LOW: {
+		dbg("TRESP_MODEM_POWER_LOW");
+
+		telephony_modem_complete_set_power(dbus_info->interface_object, dbus_info->invocation, 0);
+	}
+	break;
+
+	case TRESP_MODEM_GET_IMEI: {
+		const struct tresp_modem_get_imei *resp_get_imei = data;
+
+		dbg("TRESP_MODEM_GET_IMEI - Result: [%s]",
+			(resp_get_imei->result == TCORE_RETURN_SUCCESS ? "Success" : "Fail"));
+
+		telephony_modem_complete_get_imei(dbus_info->interface_object, dbus_info->invocation,
+			resp_get_imei->result, resp_get_imei->imei);
+	}
+	break;
+
+	case TRESP_MODEM_GET_SN: {
+		const struct tresp_modem_get_sn *resp_get_sn = data;
+
+		dbg("TRESP_MODEM_GET_SN - Result: [%s]",
+			(resp_get_sn->result == TCORE_RETURN_SUCCESS ? "Success" : "Fail"));
+
+		telephony_modem_complete_get_serial_number(dbus_info->interface_object, dbus_info->invocation,
+			resp_get_sn->result, resp_get_sn->sn, resp_get_sn->meid, resp_get_sn->imei, resp_get_sn->imeisv);
+	}
+	break;
+
+	case TRESP_MODEM_GET_VERSION: {
+		const struct tresp_modem_get_version *resp_get_version = data;
+
+		dbg("TRESP_MODEM_GET_VERSION - Result: [%s]",
+			(resp_get_version->result == TCORE_RETURN_SUCCESS ? "Success" : "Fail"));
+
+		telephony_modem_complete_get_version(dbus_info->interface_object, dbus_info->invocation,
+				resp_get_version->result,
+				resp_get_version->software,
+				resp_get_version->hardware,
+				resp_get_version->calibration,
+				resp_get_version->product_code);
+	}
+	break;
+
+	case TRESP_MODEM_SET_DUN_PIN_CONTROL: {
+		const struct tresp_modem_set_dun_pin_control *resp_dun_pin_ctrl = data;
+
+		dbg("TRESP_MODEM_SET_DUN_PIN_CONTROL - Result: [%s]",
+			(resp_dun_pin_ctrl->result == TCORE_RETURN_SUCCESS ? "Success" : "Fail"));
+
+		telephony_modem_complete_set_dun_pin_ctrl(dbus_info->interface_object, dbus_info->invocation,
+			resp_dun_pin_ctrl->result);
+	}
+	break;
+
+	default:
+		err("Unhandled/Unknown Response!!!");
+	break;
 	}
 
 	return TRUE;
 }
 
-gboolean dbus_plugin_modem_notification(struct custom_data *ctx, const char *plugin_name, TelephonyObjectSkeleton *object, enum tcore_notification_command command, unsigned int data_len, const void *data)
+gboolean dbus_plugin_modem_notification(struct custom_data *ctx, CoreObject *source,
+	TelephonyObjectSkeleton *object, enum tcore_notification_command command,
+	unsigned int data_len, const void *data)
 {
 	TelephonyModem *modem;
-	const struct tnoti_modem_power *info = data;
-	const struct tnoti_modem_dun_pin_control *pin = data;
 
 	if (!object) {
 		dbg("object is NULL");
 		return FALSE;
 	}
+	dbg("Notification!!! Command: [0x%x] CP Name: [%s]",
+		command, tcore_server_get_cp_name_by_plugin(tcore_object_ref_plugin(source)));
 
 	modem = telephony_object_peek_modem(TELEPHONY_OBJECT(object));
-	dbg("modem = %p", modem);
+	dbg("modem: [%p]", modem);
 
 	switch (command) {
-		case TNOTI_MODEM_POWER:
-			dbg("modem->state = %d", info->state);
-			telephony_modem_emit_power(modem, info->state);
-			telephony_modem_set_power(modem, info->state);
+	case TNOTI_MODEM_POWER: {
+		const struct tnoti_modem_power *info = data;
+
+		dbg("TNOTI_MODEM_POWER - Modem state: [%d]", info->state);
+
+		if (info->state > MODEM_STATE_MAX)
 			break;
 
-		case TNOTI_MODEM_DUN_PIN_CONTROL:
-			dbg("modem dun pin ctrl noti signal(%d), status(%d)", pin->signal, pin->status);
-			telephony_modem_emit_dun_pin_ctrl(modem, pin->signal, pin->status);
-			break;
+		telephony_modem_emit_power(modem, info->state);
+		telephony_modem_set_power(modem, info->state);
+	}
+	break;
 
-		case TNOTI_MODEM_DUN_EXTERNAL_CALL:
-			dbg("modem dun external call noti");
-			telephony_modem_emit_dun_external_call(modem, TRUE);
-			break;
+	case TNOTI_MODEM_DUN_PIN_CONTROL: {
+		const struct tnoti_modem_dun_pin_control *pin = data;
 
-		default:
-			dbg("not handled command[0x%x]", command);
-		break;
+		dbg("TNOTI_MODEM_DUN_PIN_CONTROL - Signal: [0x%2x] Status: [0x%2x]", pin->signal, pin->status);
+
+		telephony_modem_emit_dun_pin_ctrl(modem, pin->signal, pin->status);
+	}
+	break;
+
+	case TNOTI_MODEM_DUN_EXTERNAL_CALL: {
+		dbg("TNOTI_MODEM_DUN_EXTERNAL_CALL");
+
+		telephony_modem_emit_dun_external_call(modem, TRUE);
+	}
+	break;
+
+	default:
+		err("Unhandled/Unknown Notification!!!");
+	break;
 	}
 
 	return TRUE;

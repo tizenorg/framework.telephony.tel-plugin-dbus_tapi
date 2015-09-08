@@ -18,9 +18,9 @@
 			Sends an SMS message to the networ
 		-->
 		<method name="SendMsg">
-			<arg direction="in" type="s" name="sca"/>
+			<arg direction="in" type="v" name="sca"/>
 			<arg direction="in" type="i" name="tpdu_length"/>
-			<arg direction="in" type="s" name="tpdu_data"/>
+			<arg direction="in" type="v" name="tpdu_data"/>
 			<arg direction="in" type="i" name="moreMsg"/>
 			<arg direction="out" type="i" name="result"/>
 		</method>
@@ -39,10 +39,11 @@
 		<method name="ReadMsg">
 			<arg direction="in" type="i" name="index"/>
 			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="sim_index"/>
 			<arg direction="out" type="i" name="msg_status"/>
-			<arg direction="out" type="s" name="sca"/>
+			<arg direction="out" type="v" name="sca"/>
 			<arg direction="out" type="i" name="tpdu_length"/>
-			<arg direction="out" type="s" name="tpdu_data"/>
+			<arg direction="out" type="v" name="tpdu_data"/>
 		</method>
 
 		<!--
@@ -58,9 +59,9 @@
 		-->
 		<method name="SaveMsg">
 			<arg direction="in" type="i" name="msg_status"/>
-			<arg direction="in" type="s" name="sca"/>
+			<arg direction="in" type="v" name="sca"/>
 			<arg direction="in" type="i" name="tpdu_length"/>
-			<arg direction="in" type="s" name="tpdu_data"/>
+			<arg direction="in" type="v" name="tpdu_data"/>
 			<arg direction="out" type="i" name="result"/>
 			<arg direction="out" type="i" name="index"/>
 		</method>
@@ -75,6 +76,7 @@
 		<method name="DeleteMsg">
 			<arg direction="in" type="i" name="index"/>
 			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="resp_index"/>
 		</method>
 
 		<!--
@@ -90,7 +92,7 @@
 			<arg direction="out" type="i" name="result"/>
 			<arg direction="out" type="i" name="totalCount"/>
 			<arg direction="out" type="i" name="usedCount"/>
-			<arg direction="out" type="s" name="indexList"/>
+			<arg direction="out" type="ai" name="indexList"/>
 		</method>
 
 		<!--
@@ -110,7 +112,7 @@
 			<arg direction="out" type="i" name="ton"/>
 			<arg direction="out" type="i" name="npi"/>
 			<arg direction="out" type="i" name="dialNumberLength"/>
-			<arg direction="out" type="s" name="dialNumber"/>
+			<arg direction="out" type="v" name="dialNumber"/>
 		</method>
 
 		<!--
@@ -129,7 +131,7 @@
 			<arg direction="in" type="i" name="ton"/>
 			<arg direction="in" type="i" name="npi"/>
 			<arg direction="in" type="i" name="dialNumberLength"/>
-			<arg direction="in" type="s" name="dialNumber"/>
+			<arg direction="in" type="v" name="dialNumber"/>
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
@@ -169,7 +171,7 @@
 			<arg direction="in" type="i" name="cbEnable"/>
 			<arg direction="in" type="i" name="msgIdMaxCount"/>
 			<arg direction="in" type="i" name="msgIdRangeCount"/>
-			<arg direction="in" type="s" name="msgId"/>
+			<arg direction="in" type="v" name="msgId"/>
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
@@ -218,9 +220,9 @@
 			Send a delivery report for the received incoming SMS to the network.
 		-->
 		<method name="SetDeliveryReport">
-			<arg direction="in" type="s" name="sca"/>
+			<arg direction="in" type="v" name="sca"/>
 			<arg direction="in" type="i" name="tpdu_length"/>
-			<arg direction="in" type="s" name="tpdu_data"/>
+			<arg direction="in" type="v" name="tpdu_data"/>
 			<arg direction="in" type="i" name="rpCause"/>
 			<arg direction="out" type="i" name="result"/>
 		</method>
@@ -268,16 +270,16 @@
 			<arg direction="out" type="i" name="recordIndex"/>
 			<arg direction="out" type="i" name="recordLen"/>
 			<arg direction="out" type="i" name="alphaIdLen"/>
-			<arg direction="out" type="s" name="alphaId"/>
+			<arg direction="out" type="v" name="alphaId"/>
 			<arg direction="out" type="i" name="paramIndicator"/>
 			<arg direction="out" type="i" name="destAddr_DialNumLen"/>
 			<arg direction="out" type="i" name="destAddr_Ton"/>
 			<arg direction="out" type="i" name="destAddr_Npi"/>
-			<arg direction="out" type="s" name="destAddr_DiallingNum"/>
+			<arg direction="out" type="v" name="destAddr_DiallingNum"/>
 			<arg direction="out" type="i" name="svcCntrAddr_DialNumLen"/>
 			<arg direction="out" type="i" name="SvcCntrAddr_Ton"/>
 			<arg direction="out" type="i" name="svcCntrAddr_Npi"/>
-			<arg direction="out" type="s" name="svcCntrAddr_DialNum"/>
+			<arg direction="out" type="v" name="svcCntrAddr_DialNum"/>
 			<arg direction="out" type="i" name="protocolId"/>
 			<arg direction="out" type="i" name="dataCodingScheme"/>
 			<arg direction="out" type="i" name="validityPeriod"/>
@@ -309,16 +311,16 @@
 			<arg direction="in" type="i" name="recordIndex"/>
 			<arg direction="in" type="i" name="recordLen"/>
 			<arg direction="in" type="i" name="alphaIdLen"/>
-			<arg direction="in" type="s" name="alphaId"/>
+			<arg direction="in" type="v" name="alphaId"/>
 			<arg direction="in" type="i" name="paramIndicator"/>
 			<arg direction="in" type="i" name="destAddr_DialNumLen"/>
 			<arg direction="in" type="i" name="destAddr_Ton"/>
 			<arg direction="in" type="i" name="destAddr_Npi"/>
-			<arg direction="in" type="s" name="destAddr_DiallingNum"/>
+			<arg direction="in" type="v" name="destAddr_DiallingNum"/>
 			<arg direction="in" type="i" name="svcCntrAddr_DialNumLen"/>
 			<arg direction="in" type="i" name="SvcCntrAddr_Ton"/>
 			<arg direction="in" type="i" name="svcCntrAddr_Npi"/>
-			<arg direction="in" type="s" name="svcCntrAddr_DialNum"/>
+			<arg direction="in" type="v" name="svcCntrAddr_DialNum"/>
 			<arg direction="in" type="i" name="protocolId"/>
 			<arg direction="in" type="i" name="dataCodingScheme"/>
 			<arg direction="in" type="i" name="validityPeriod"/>
@@ -356,9 +358,9 @@
 			This is an unsolicited Incoming SMS Event
 		-->
 		<signal name="IncommingMsg">
-			<arg type="s" name="sca"/>
+			<arg type="v" name="sca"/>
 			<arg type="i" name="msgLength"/>
-			<arg type="s" name="tpdu"/>
+			<arg type="v" name="tpdu"/>
 		</signal>
 
 		<!--
@@ -372,7 +374,7 @@
 		<signal name="IncommingCbMsg">
 			<arg type="i" name="cbMsgType"/>
 			<arg type="i" name="msgLength"/>
-			<arg type="s" name="tpdu"/>
+			<arg type="v" name="tpdu"/>
 		</signal>
 
 		<!--
@@ -386,7 +388,7 @@
 		<signal name="IncommingEtwsMsg">
 			<arg type="i" name="etwsMsgType"/>
 			<arg type="i" name="msgLength"/>
-			<arg type="s" name="tpdu"/>
+			<arg type="v" name="tpdu"/>
 		</signal>
 
 		<!--

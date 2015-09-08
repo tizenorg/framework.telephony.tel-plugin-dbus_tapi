@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <glib.h>
-#include <glib-object.h>
 #include <gio/gio.h>
 
 #include <tcore.h>
@@ -40,6 +39,8 @@
 #include <co_sim.h>
 #include <co_ps.h>
 
+#include "sat_ui_support.h"
+
 #ifndef PLUGIN_VERSION
 #define PLUGIN_VERSION 1
 #endif
@@ -50,29 +51,38 @@
 static void add_modem(struct custom_data *ctx, TcorePlugin *p)
 {
 	TelephonyObjectSkeleton *object;
-	char *plugin_name = NULL;
 	char *path = NULL;
-	GSList *co_list = NULL;
+	GSList *co_list;
+	const char *cp_name;
 
-	plugin_name = tcore_plugin_ref_plugin_name(p);
-	if (!plugin_name)
+	dbg("Entry");
+
+	/* Get CP Name */
+	cp_name = tcore_server_get_cp_name_by_plugin(p);
+	if (cp_name == NULL) {
+		err("CP Name is NULL");
 		return;
+	}
 
-	path = g_strdup_printf("%s/%s", MY_DBUS_PATH, plugin_name);
-	dbg("path = [%s]", path);
+	path = g_strdup_printf("%s/%s", MY_DBUS_PATH, cp_name);
+	dbg("PATH: [%s]", path);
 
 	object = g_hash_table_lookup(ctx->objects, path);
 	if (object) {
-		dbg("dbus interface object already created. (object = %p)", object);
+		dbg("DBUS interface object already created (object: %p)", object);
 		goto OUT;
 	}
 
 	object = telephony_object_skeleton_new(path);
-	dbg("new dbus object created. (object = %p)", object);
+	dbg("New DBUS object created (object: [%p])", object);
 	g_hash_table_insert(ctx->objects, g_strdup(path), object);
 
 	/* Add interfaces */
-	dbus_plugin_setup_modem_interface(object, ctx);
+	co_list = tcore_plugin_get_core_objects_bytype(p, CORE_OBJECT_TYPE_MODEM);
+	if (co_list) {
+		g_slist_free(co_list);
+		dbus_plugin_setup_modem_interface(object, ctx);
+	}
 
 	co_list = tcore_plugin_get_core_objects_bytype(p, CORE_OBJECT_TYPE_CALL);
 	if (co_list) {
@@ -122,105 +132,121 @@ static void add_modem(struct custom_data *ctx, TcorePlugin *p)
 		dbus_plugin_setup_sim_interface(object, ctx);
 	}
 
+	co_list = tcore_plugin_get_core_objects_bytype(p, CORE_OBJECT_TYPE_GPS);
+	if (co_list) {
+		g_slist_free(co_list);
+		dbus_plugin_setup_gps_interface(object, ctx);
+	}
+	dbus_plugin_setup_oem_interface(object, ctx);
+	/* Export the Object to Manager */
 	g_dbus_object_manager_server_export (ctx->manager, G_DBUS_OBJECT_SKELETON (object));
 
+
 OUT:
-	if (path)
-		g_free(path);
+	/* Freeing memory */
+	g_free(path);
 }
 
 static void refresh_object(struct custom_data *ctx)
 {
-	GSList *plugins;
+	GSList *modem_plg_list;
+	TcorePlugin *modem_plg;
 	GSList *cur;
-	GSList *co_list;
-	TcorePlugin *p;
 
 	if (!ctx->manager) {
-		dbg("not ready..");
+		dbg("Telephony not ready...");
 		return;
 	}
 
-	plugins = tcore_server_ref_plugins(ctx->server);
-	if (!plugins)
-		return;
-
-	cur = plugins;
-	for (cur = plugins; cur; cur = cur->next) {
-		p = cur->data;
-		if (!p)
-			continue;
-
-		co_list = tcore_plugin_get_core_objects_bytype(p, CORE_OBJECT_TYPE_MODEM);
-		if (!co_list)
-			continue;
-
-		if (!tcore_object_get_hal(co_list->data)) {
-			g_slist_free(co_list);
+	modem_plg_list = tcore_server_get_modem_plugin_list(ctx->server);
+	for (cur = modem_plg_list; cur; cur = cur->next) {
+		modem_plg = cur->data;
+		if (modem_plg == NULL) {
+			dbg("No Modem Plug-in");
 			continue;
 		}
 
-		g_slist_free(co_list);
-
-		add_modem(ctx, p);
+		/* Add modem */
+		add_modem(ctx, modem_plg);
 	}
+	g_slist_free(modem_plg_list);
 }
 
 static TReturn send_response(Communicator *comm, UserRequest *ur, enum tcore_response_command command, unsigned int data_len, const void *data)
 {
 	struct custom_data *ctx = NULL;
-	const struct tcore_user_info *ui;
+	struct dbus_request_info *dbus_info;
+	gboolean ret = FALSE;
 
 	dbg("Response Command = [0x%x], data_len = %d", command, data_len);
+
 
 	ctx = tcore_communicator_ref_user_data(comm);
 	if (!ctx) {
 		dbg("user_data is NULL");
-		return FALSE;
+		return TCORE_RETURN_EINVAL;
 	}
 
-	ui = tcore_user_request_ref_user_info(ur);
+	dbus_info = (struct dbus_request_info *)tcore_user_request_ref_user_info(ur);
+	if (!dbus_info) {
+		dbg("dbus_info is NULL");
+		return TCORE_RETURN_EINVAL;
+	}
+
+	if (!data) {
+		g_dbus_method_invocation_return_error (dbus_info->invocation,
+				G_DBUS_ERROR,
+				G_DBUS_ERROR_FAILED,
+				"Request failed");
+		return TCORE_RETURN_SUCCESS;
+	}
 
 	switch (command & (TCORE_RESPONSE | 0x0FF00000)) {
 		case TRESP_CALL:
-			dbus_plugin_call_response(ctx, ur, ui->user_data, command, data_len, data);
+			ret = dbus_plugin_call_response(ctx, ur, dbus_info, command, data_len, data);
 			break;
 
 		case TRESP_SS:
-			dbus_plugin_ss_response(ctx, ur, ui->user_data, command, data_len, data);
+			ret = dbus_plugin_ss_response(ctx, ur, dbus_info, command, data_len, data);
 			break;
 
 		case TRESP_PS:
 			break;
 
 		case TRESP_SIM:
-			dbus_plugin_sim_response(ctx, ur, ui->user_data, command, data_len, data);
+			ret = dbus_plugin_sim_response(ctx, ur, dbus_info, command, data_len, data);
 			break;
 
 		case TRESP_SAP:
-			dbus_plugin_sap_response(ctx, ur, ui->user_data, command, data_len, data);
+			ret = dbus_plugin_sap_response(ctx, ur, dbus_info, command, data_len, data);
 			break;
 
 		case TRESP_PHONEBOOK:
-			dbus_plugin_phonebook_response(ctx, ur, ui->user_data, command, data_len, data);
+			ret = dbus_plugin_phonebook_response(ctx, ur, dbus_info, command, data_len, data);
 			break;
 
 		case TRESP_MODEM:
-			dbus_plugin_modem_response(ctx, ur, ui->user_data, command, data_len, data);
+			ret = dbus_plugin_modem_response(ctx, ur, dbus_info, command, data_len, data);
 			break;
 
 		case TRESP_SMS:
-			dbus_plugin_sms_response(ctx, ur, ui->user_data, command, data_len, data);
+			ret = dbus_plugin_sms_response(ctx, ur, dbus_info, command, data_len, data);
 			break;
 
 		case TRESP_SAT:
-			dbus_plugin_sat_response(ctx, ur, ui->user_data, command, data_len, data);
+			ret = dbus_plugin_sat_response(ctx, ur, dbus_info, command, data_len, data);
 			break;
+
 		case TRESP_CUSTOM:
+			ret = dbus_plugin_oem_response(ctx, ur, dbus_info, command, data_len, data);
 			break;
 
 		case TRESP_NETWORK:
-			dbus_plugin_network_response(ctx, ur, ui->user_data, command, data_len, data);
+			ret = dbus_plugin_network_response(ctx, ur, dbus_info, command, data_len, data);
+			break;
+
+		case TRESP_GPS:
+			ret = dbus_plugin_gps_response(ctx, ur, dbus_info, command, data_len, data);
 			break;
 
 		default:
@@ -228,90 +254,183 @@ static TReturn send_response(Communicator *comm, UserRequest *ur, enum tcore_res
 			break;
 	}
 
-	return FALSE;
+	if (ret == TRUE)
+		return TCORE_RETURN_SUCCESS;
+	else
+		return TCORE_RETURN_FAILURE;
 }
 
 static TReturn send_notification(Communicator *comm, CoreObject *source, enum tcore_notification_command command, unsigned int data_len, const void *data)
 {
 	struct custom_data *ctx = NULL;
-	char *plugin_name;
-	char *path;
-	TelephonyObjectSkeleton *object;
-
-	dbg("notification !!! (command = 0x%x, data_len = %d)", command, data_len);
+	unsigned int noti = 0;
+	gboolean ret = FALSE;
 
 	ctx = tcore_communicator_ref_user_data(comm);
-	if (!ctx) {
-		dbg("user_data is NULL");
-		return FALSE;
+	if (ctx == NULL) {
+		err("user_data is NULL");
+		return TCORE_RETURN_EINVAL;
 	}
 
-	plugin_name = tcore_plugin_ref_plugin_name(tcore_object_ref_plugin(source));
-	if (plugin_name) {
-		path = g_strdup_printf("%s/%s", MY_DBUS_PATH, plugin_name);
+	noti = (command & (TCORE_NOTIFICATION | 0x0FF00000));
+
+	/*
+	 * Notifications are classified into -
+	 *	Server (System) notifications
+	 *	Module notifications
+	 */
+	if (noti == TNOTI_SERVER) {
+		dbg("Server (System) Notification");
+
+		switch (command) {
+		case TNOTI_SERVER_ADDED_MODEM_PLUGIN: {
+			const char *cp_name;
+
+			cp_name = tcore_server_get_cp_name_by_plugin((TcorePlugin*)data);
+			dbg("Modem Plug-in (%s) is added... Exporting interfaces for the modem", cp_name);
+			add_modem(ctx, (TcorePlugin*)data);
+
+			ret = TRUE;
+			break;
+		}
+
+		case TNOTI_SERVER_ADDED_MODEM_PLUGIN_COMPLETED: {
+			Storage *strg;
+			gboolean b_set;
+			int *count;
+
+			if (data == NULL) {
+				err("data is NULL");
+				break;
+			}
+
+			count = (int *)data;
+			dbg("[%d] Modem plug-ins are added...", *count);
+
+			strg = tcore_server_find_storage(ctx->server, "vconf");
+
+			b_set = tcore_storage_set_int(strg, STORAGE_KEY_TELEPHONY_SIM_SLOT_COUNT, *count);
+			if (b_set == FALSE) {
+				err("Fail to set the sim slot count vconf");
+
+				/* Reset STORAGE_KEY_TELEPHONY_READY */
+				b_set = tcore_storage_set_bool(strg, STORAGE_KEY_TELEPHONY_READY, FALSE);
+				warn("Reset TELEPHONY_READY!!!");
+			} else {
+				if (ctx->name_acquired == TRUE
+					&& tcore_storage_get_bool(strg, STORAGE_KEY_TELEPHONY_READY) == FALSE) {
+					b_set = tcore_storage_set_bool(strg, STORAGE_KEY_TELEPHONY_READY, TRUE);
+					if (b_set == FALSE) {
+						err("Fail to set telephony ready");
+
+						/* Reset STORAGE_KEY_TELEPHONY_SIM_SLOT_COUNT */
+						b_set = tcore_storage_set_int(strg, STORAGE_KEY_TELEPHONY_SIM_SLOT_COUNT, -1);
+						warn("Reset STORAGE_KEY_TELEPHONY_SIM_SLOT_COUNT!!!");
+					} else {
+#ifdef ENABLE_KPI_LOGS
+						TIME_CHECK("Setting VCONFKEY_TELEPHONY_READY to TRUE");
+#else
+						msg("Setting VCONFKEY_TELEPHONY_READY to TRUE");
+#endif
+					}
+				}
+				dbg("Bus acquired...[%s]", (ctx->name_acquired)?"YES":"NO" );
+			}
+			ret = TRUE;
+			break;
+		}
+
+		default:
+			warn("Unsupported System notification: (0x%x)", command);
+			break;
+		}
 	}
 	else {
-		path = g_strdup_printf("%s", MY_DBUS_PATH);
-	}
-	dbg("path = [%s]", path);
+		TelephonyObjectSkeleton *object;
+		const char *cp_name;
+		char *path;
 
-	object = g_hash_table_lookup(ctx->objects, path);
-	dbg("dbus inteface object = %p", object);
+		cp_name = tcore_server_get_cp_name_by_plugin(tcore_object_ref_plugin(source));
+		if (cp_name == NULL) {
+			err("CP name is NULL");
+			return TCORE_RETURN_FAILURE;
+		}
 
-	switch (command & (TCORE_NOTIFICATION | 0x0FF00000)) {
+		path = g_strdup_printf("%s/%s", MY_DBUS_PATH, cp_name);
+
+		/* Look-up Hash table for Object */
+		object = g_hash_table_lookup(ctx->objects, path);
+
+		dbg("[%s]:(cmd[0x%x] data[%p] len[%d] obj[%p])",
+			cp_name, command, data, data_len, object);
+
+		g_free(path);
+		if (object == NULL) {
+			err("Object is NOT defined!!!");
+			return TCORE_RETURN_FAILURE;
+		}
+
+		switch (noti) {
 		case TNOTI_CALL:
-			dbus_plugin_call_notification(ctx, plugin_name, object, command, data_len, data);
+			ret = dbus_plugin_call_notification(ctx, source, object, command, data_len, data);
 			break;
 
 		case TNOTI_SS:
-			dbus_plugin_ss_notification(ctx, plugin_name, object, command, data_len, data);
+			ret = dbus_plugin_ss_notification(ctx, source, object, command, data_len, data);
 			break;
 
-		case TNOTI_PS:
+ 		case TNOTI_PS:
+ 			warn("PS Notification (0x%x)... Not handled!!!", noti);
 			break;
 
 		case TNOTI_SIM:
-			dbus_plugin_sim_notification(ctx, plugin_name, object, command, data_len, data);
+			ret = dbus_plugin_sim_notification(ctx, source, object, command, data_len, data);
 			break;
 
 		case TNOTI_SAP:
-			dbus_plugin_sap_notification(ctx, plugin_name, object, command, data_len, data);
+			ret = dbus_plugin_sap_notification(ctx, source, object, command, data_len, data);
 			break;
 
 		case TNOTI_PHONEBOOK:
-			dbus_plugin_phonebook_notification(ctx, plugin_name, object, command, data_len, data);
+			ret = dbus_plugin_phonebook_notification(ctx, source, object, command, data_len, data);
 			break;
 
 		case TNOTI_MODEM:
-			dbus_plugin_modem_notification(ctx, plugin_name, object, command, data_len, data);
+			ret = dbus_plugin_modem_notification(ctx, source, object, command, data_len, data);
 			break;
 
 		case TNOTI_SMS:
-			dbus_plugin_sms_notification(ctx, plugin_name, object, command, data_len, data);
+			ret = dbus_plugin_sms_notification(ctx, source, object, command, data_len, data);
 			break;
 
 		case TNOTI_SAT:
-			dbus_plugin_sat_notification(ctx, plugin_name, object, command, data_len, data);
-			break;
-		case TNOTI_CUSTOM:
+			ret = dbus_plugin_sat_notification(ctx, source, object, command, data_len, data);
 			break;
 
 		case TNOTI_NETWORK:
-			dbus_plugin_network_notification(ctx, plugin_name, object, command, data_len, data);
+			ret = dbus_plugin_network_notification(ctx, source, object, command, data_len, data);
 			break;
 
-		case TNOTI_SERVER:
-			if (command == TNOTI_SERVER_RUN) {
-				refresh_object(ctx);
-			}
+		case TNOTI_GPS:
+			ret = dbus_plugin_gps_notification(ctx, source, object, command, data_len, data);
 			break;
 
 		default:
-			warn("unknown command (0x%x)", command);
+			if ((command & (TCORE_NOTIFICATION | 0x0F000000)) == (TNOTI_CUSTOM)) {
+				dbg("Custom Notification: [0x%x]", command);
+				ret = dbus_plugin_oem_notification(ctx, source, object, command, data_len, data);
+			} else {
+				warn("Unknown/Unhandled Notification: [0x%x]", command);
+			}
+
 			break;
+		}
 	}
 
-	return FALSE;
+	if (ret == TRUE)
+		return TCORE_RETURN_SUCCESS;
+	else
+		return TCORE_RETURN_FAILURE;
 }
 
 
@@ -321,91 +440,111 @@ on_manager_getmodems (TelephonyManager *mgr,
 		gpointer                user_data)
 {
 	struct custom_data *ctx = user_data;
-	GSList *plugins;
-	GSList *cur;
-	GSList *co_list;
-	int max_count = 0;
-	int count;
-	TcorePlugin *p;
+	GSList *cp_name_list;
 	gchar **list;
+	const char *name = NULL;
+	int count;
+	dbg("Entry");
 
-	plugins = tcore_server_ref_plugins(ctx->server);
-	if (!plugins) {
-		telephony_manager_complete_get_modems(mgr, invocation, NULL);
+	cp_name_list = tcore_server_get_cp_name_list(ctx->server);
+	if (cp_name_list == NULL) {
+		telephony_manager_complete_get_modems(mgr, invocation, &name);
 		return TRUE;
 	}
 
-	max_count = g_slist_length(plugins);
-	list = calloc(sizeof(gchar *) * max_count, 1);
+	count = g_slist_length(cp_name_list);
+	list = g_try_malloc0(sizeof(gchar *) * (count+1));
+	if (list == NULL) {
+		err("Memory allocation failed!!");
+		telephony_manager_complete_get_modems(mgr, invocation, &name);
+		g_slist_free_full(cp_name_list, g_free);
+		return TRUE;
+	}
+
 	count = 0;
-
-	cur = plugins;
-	for (cur = plugins; cur; cur = cur->next) {
-		p = cur->data;
-		if (!p)
-			continue;
-
-		co_list = tcore_plugin_get_core_objects_bytype(p, CORE_OBJECT_TYPE_MODEM);
-		if (!co_list)
-			continue;
-
-		if (!tcore_object_get_hal(co_list->data)) {
-			g_slist_free(co_list);
-			continue;
-		}
-		g_slist_free(co_list);
-
-		list[count] = g_strdup(tcore_plugin_get_description(p)->name);
+	for ( ; cp_name_list ; cp_name_list = cp_name_list->next) {
+		name = cp_name_list->data;
+		list[count] = g_strdup(name);
+		dbg("list[%d]: %s", count, list[count]);
 		count++;
 	}
 
 	telephony_manager_complete_get_modems(mgr, invocation, (const gchar **)list);
 
-	for (;count >= 0; count--) {
-		if (list[count]) {
-			g_free(list[count]);
-		}
-	}
-	free(list);
+	/* Free memory */
+	for (;count >= 0; count--)
+		g_free(list[count]);
+
+	g_free(list);
+
+	/* Freeing the received list of CP names */
+	g_slist_free_full(cp_name_list, g_free);
 
 	return TRUE;
 }
 
+static void on_name_lost(GDBusConnection *conn, const gchar *name, gpointer user_data)
+{
+	info("Lost the name %s on the session bus\n", name);
+}
+
+static void on_name_acquired(GDBusConnection *conn, const gchar *name, gpointer user_data)
+{
+	struct custom_data *ctx = user_data;
+	Storage *strg;
+	gboolean b_set;
+	int count;
+
+	ctx->name_acquired = TRUE; /* Setting Bus acquried flag after Bus name is acquired */
+
+	info("Acquired the name %s on the session bus", name);
+	strg = tcore_server_find_storage(ctx->server, "vconf");
+
+	count = tcore_storage_get_int(strg, STORAGE_KEY_TELEPHONY_SIM_SLOT_COUNT);
+	if (count < 0) {
+		err("SIM slot count not yet set");
+	} else {
+		if (tcore_storage_get_bool(strg, STORAGE_KEY_TELEPHONY_READY) == FALSE) {
+			b_set = tcore_storage_set_bool(strg, STORAGE_KEY_TELEPHONY_READY, TRUE);
+			if (b_set == FALSE) {
+				err("Fail to set telephony ready");
+
+				/* Reset STORAGE_KEY_TELEPHONY_SIM_SLOT_COUNT */
+				b_set = tcore_storage_set_int(strg, STORAGE_KEY_TELEPHONY_SIM_SLOT_COUNT, -1);
+				warn("Reset STORAGE_KEY_TELEPHONY_SIM_SLOT_COUNT!!!");
+			} else {
+#ifdef ENABLE_KPI_LOGS
+				TIME_CHECK("Setting VCONFKEY_TELEPHONY_READY to TRUE");
+#else
+				msg("Setting VCONFKEY_TELEPHONY_READY to TRUE");
+#endif
+			}
+		}
+	}
+}
+
 static void on_bus_acquired(GDBusConnection *conn, const gchar *name, gpointer user_data)
 {
-	gboolean rv = FALSE;
-	gpointer handle = NULL;
-	static Storage *strg;
 	struct custom_data *ctx = user_data;
-	TelephonyManager *mgr;
 
 	info("dbus registered");
-
-	ctx->manager = g_dbus_object_manager_server_new (MY_DBUS_PATH);
 
 	refresh_object(ctx);
 
 	/* Add interface to default object path */
-	mgr = telephony_manager_skeleton_new();
-	g_signal_connect (mgr,
+	ctx->mgr = telephony_manager_skeleton_new();
+	g_signal_connect (ctx->mgr,
 			"handle-get-modems",
 			G_CALLBACK (on_manager_getmodems),
 			ctx); /* user_data */
 
-	g_dbus_interface_skeleton_export(G_DBUS_INTERFACE_SKELETON(mgr), conn, MY_DBUS_PATH, NULL);
+	g_dbus_interface_skeleton_export(G_DBUS_INTERFACE_SKELETON(ctx->mgr), conn, MY_DBUS_PATH, NULL);
 
 	g_dbus_object_manager_server_set_connection (ctx->manager, conn);
 
-	//set telephony ready registry
-	strg = tcore_server_find_storage(ctx->server, "vconf");
-	handle = tcore_storage_create_handle(strg, "vconf");
+	dbg("Aquire DBUS - COMPLETE");
 
-	rv = tcore_storage_set_bool(strg, STORAGE_KEY_TELEPHONY_READY, TRUE);
-	if(!rv){
-		dbg("fail to set the telephony status to registry");
-	}
 
-	dbg("done to acquire the dbus");
 }
 
 struct tcore_communitor_operations ops = {
@@ -431,7 +570,7 @@ static gboolean on_init(TcorePlugin *p)
 
 	dbg("i'm init!");
 
-	data = calloc(sizeof(struct custom_data), 1);
+	data = calloc(1, sizeof(struct custom_data));
 	if (!data) {
 		return FALSE;
 	}
@@ -445,7 +584,7 @@ static gboolean on_init(TcorePlugin *p)
 	data->server = tcore_plugin_ref_server(p);
 
 	data->objects = g_hash_table_new(g_str_hash, g_str_equal);
-	data->cached_sat_main_menu = NULL;
+	data->cached_data = NULL;
 
 	dbg("data = %p", data);
 
@@ -453,24 +592,33 @@ static gboolean on_init(TcorePlugin *p)
 			MY_DBUS_SERVICE,
 			G_BUS_NAME_OWNER_FLAGS_REPLACE,
 			on_bus_acquired,
-			NULL, NULL,
+			on_name_acquired, on_name_lost,
 			data,
 			NULL);
+
+	data->owner_id = id;
+	dbg("owner id=[%d]", data->owner_id);
+
+	data->manager = g_dbus_object_manager_server_new (MY_DBUS_PATH);
+	refresh_object(data);
 
 	return TRUE;
 }
 
 static void on_unload(TcorePlugin *p)
 {
-	struct custom_data *data;
-	Communicator *comm;
+	struct custom_data *data = 0;
+	Communicator *comm = 0;
+	Server *s = tcore_plugin_ref_server(p);
+	GSList *list = NULL;
+	struct cached_data *object = NULL;
 
 	if (!p)
 		return;
 
 	dbg("i'm unload");
 
-	comm = tcore_server_find_communicator(tcore_plugin_ref_server(p), "dbus");
+	comm = tcore_server_find_communicator(s, "dbus");
 	if (!comm)
 		return;
 
@@ -478,12 +626,29 @@ static void on_unload(TcorePlugin *p)
 	if (!data)
 		return;
 
+	if(data->owner_id > 0) {
+		g_bus_unown_name(data->owner_id);
+	}
+
 	g_hash_table_destroy(data->objects);
 
+	for (list = data->cached_data; list; list = list->next) {
+		object = (struct cached_data *)list->data;
+		if (object == NULL)
+			continue;
+
+		g_variant_unref(object->cached_sat_main_menu);
+		g_free(object->cp_name);
+		g_free(object);
+	}
+	g_slist_free(data->cached_data);
+
 	free(data);
+
+	tcore_server_remove_communicator(s, comm);
 }
 
-struct tcore_plugin_define_desc plugin_define_desc =
+EXPORT_API struct tcore_plugin_define_desc plugin_define_desc =
 {
 	.name = "NEW_DBUS_COMMUNICATOR",
 	.priority = TCORE_PLUGIN_PRIORITY_HIGH,

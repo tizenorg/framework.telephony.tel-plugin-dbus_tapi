@@ -1,5 +1,5 @@
 /*
- * libslp-tapi
+ * tel-plugin-dbus_tapi
  *
  * Copyright (c) 2011 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -41,6 +41,7 @@
 #include <TelSatObj.h>
 #include <TelSatProactvCmd.h>
 #include <TelSatEnvelope.h>
+#include <TelSim.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -176,6 +177,7 @@ typedef struct
 	unsigned int					duration;					/**<the duration of display */
 	int							bIsPriorityHigh;			/**<indicates whether the text is to be displayed if some other app is using the screen.*/
 	int							bIsUserRespRequired;		/**<indicates whether user response required or Not*/
+	int							b_immediately_resp;
 	TelSatIconIdentifierInfo_t	iconId;						/**< Icon Identifier */
 }TelSatDisplayTextInd_t;
 
@@ -221,7 +223,7 @@ typedef struct
 	int						commandId;	/**<Proactive Command Number sent by USIM*/
 	TelSatTextInfo_t			text;		/**<character data to display on screen*/
 	TelSatToneInfo_t			tone;		/**<tone info	*/
-	TelSatDurationInfo_t		duration;	/**<the duration for playing tone*/
+	unsigned int				duration;	/**<the duration for playing tone*/
 	TelSatIconIdentifierInfo_t	iconId;		/**<Icon Identifier*/
 }TelSatPlayToneInd_t;
 
@@ -299,6 +301,7 @@ typedef struct
 typedef struct
 {
 	int							commandId;			/**<Proactive Command Number sent by USIM*/
+	unsigned int				duration;			/**<the duration of display*/
 	TelSatCmdQualiRefresh_t		refreshType;		/**<refresh mode*/
 }TelSatRefreshIndUiInfo_t;
 
@@ -312,7 +315,7 @@ typedef struct
 	TelSatRefreshAppType_t		appType;								/**<concerned application type */
 	TelSatCmdQualiRefresh_t		refreshMode;							/**<refresh mode*/
 	unsigned char					fileCount;								/**<refresh file count*/
-//	TelSimFileID_t				fileId[TAPI_SAT_REFRESH_FILE_LIST];		/**<refresh file identifier*/
+	TelSimFileID_t				fileId[TAPI_SAT_REFRESH_FILE_LIST];		/**<refresh file identifier*/
 }TelSatRefreshInd_t;
 
 //	Telephony END PROACTIVE COMMAND INFO
@@ -345,6 +348,8 @@ typedef struct
 typedef struct
 {
 	int					commandId;		/**<Proactive Command Number sent by USIM*/
+	TelSimTypeOfNum_t ton; /**<	type of number 		*/
+	TelSimNumberingPlanIdentity_t npi; /**<	number plan identity 		*/
 	unsigned short		ssStringLen;
 	unsigned char		ssString[TAPI_SAT_DEF_SS_LEN_MAX+1];
 }TelSatSendSsIndSsData_t;
