@@ -30,17 +30,16 @@
 
 #define AC_MANAGER		"telephony_framework::api_manager"
 #define AC_CALL			"telephony_framework::api_call"
-#define AC_GPS			"telephony_framework::api_gps"
 #define AC_MODEM		"telephony_framework::api_modem"
 #define AC_NETWORK		"telephony_framework::api_network"
-#define AC_PHONEBOOK	"telephony_framework::api_phonebook"
+#define AC_PHONEBOOK		"telephony_framework::api_phonebook"
 #define AC_SAP			"telephony_framework::api_sap"
 #define AC_SAT			"telephony_framework::api_sat"
 #define AC_SIM			"telephony_framework::api_sim"
 #define AC_SMS			"telephony_framework::api_sms"
 #define AC_SS			"telephony_framework::api_ss"
 
-#define MY_DBUS_PATH	"/org/tizen/telephony"
+#define MY_DBUS_PATH		"/org/tizen/telephony"
 #define MY_DBUS_SERVICE	"org.tizen.telephony"
 
 enum dbus_tapi_sim_slot_id {
@@ -79,16 +78,28 @@ struct dbus_request_info {
 #define DEFAULT_MSG_REQ_FAILED "Request failed"
 
 #define GET_CP_NAME(invocation) dbus_plugin_get_cp_name_by_object_path(g_dbus_method_invocation_get_object_path(invocation))
-#define MAKE_UR(ctx,object,invocation) dbus_plugin_macro_user_request_new(ctx, object, invocation)
-#define FAIL_RESPONSE(ivc,msg) g_dbus_method_invocation_return_error (ivc, \
-		G_DBUS_ERROR, G_DBUS_ERROR_FAILED, msg);
+#define MAKE_UR(ctx, object, invocation) dbus_plugin_macro_user_request_new(ctx, object, invocation)
+#define FAIL_RESPONSE(ivc, msg) g_dbus_method_invocation_return_error (ivc, \
+	G_DBUS_ERROR, G_DBUS_ERROR_FAILED, msg);
+
+gboolean dtapi_init(TcorePlugin *p);
+void dtapi_deinit(TcorePlugin *p);
 
 char *dbus_plugin_get_cp_name_by_object_path(const char *object_path);
 UserRequest *dbus_plugin_macro_user_request_new(struct custom_data *ctx, void *object, GDBusMethodInvocation *invocation);
-gboolean check_access_control (GDBusMethodInvocation *invoc, const char *label, const char *perm);
+gboolean check_access_control(GDBusMethodInvocation *invoc, const char *label, const char *perm);
 
 gboolean dbus_plugin_util_load_xml(char *docname, char *groupname, void **i_doc, void **i_root_node);
 void dbus_plugin_util_unload_xml(void **i_doc, void **i_root_node);
+
+void dtapi_dispatch_request(struct custom_data *ctx,
+	void *object, GDBusMethodInvocation *invocation,
+	enum tcore_request_command req_command,
+	void *req_data, unsigned int req_data_len);
+TReturn dtapi_dispatch_request_ex(struct custom_data *ctx,
+	void *object, GDBusMethodInvocation *invocation,
+	enum tcore_request_command req_command,
+	void *req_data, unsigned int req_data_len);
 
 gboolean dbus_plugin_setup_network_interface(TelephonyObjectSkeleton *object, struct custom_data *ctx);
 gboolean dbus_plugin_network_response(struct custom_data *ctx, UserRequest *ur, struct dbus_request_info *dbus_info, enum tcore_response_command command, unsigned int data_len, const void *data);
@@ -126,14 +137,10 @@ gboolean dbus_plugin_setup_modem_interface(TelephonyObjectSkeleton *object, stru
 gboolean dbus_plugin_modem_response(struct custom_data *ctx, UserRequest *ur, struct dbus_request_info *dbus_info, enum tcore_response_command command, unsigned int data_len, const void *data);
 gboolean dbus_plugin_modem_notification(struct custom_data *ctx, CoreObject *source, TelephonyObjectSkeleton *object, enum tcore_notification_command command, unsigned int data_len, const void *data);
 
-gboolean dbus_plugin_setup_gps_interface(TelephonyObjectSkeleton *object, struct custom_data *ctx);
-gboolean dbus_plugin_gps_response(struct custom_data *ctx, UserRequest *ur, struct dbus_request_info *dbus_info, enum tcore_response_command command, unsigned int data_len, const void *data);
-gboolean dbus_plugin_gps_notification(struct custom_data *ctx, CoreObject *source, TelephonyObjectSkeleton *object, enum tcore_notification_command command, unsigned int data_len, const void *data);
-
 gboolean dbus_plugin_setup_oem_interface(TelephonyObjectSkeleton *object, struct custom_data *ctx);
 gboolean dbus_plugin_oem_response(struct custom_data *ctx, UserRequest *ur, struct dbus_request_info *dbus_info, enum tcore_response_command command, unsigned int data_len, const void *data);
 gboolean dbus_plugin_oem_notification(struct custom_data *ctx, CoreObject *source, TelephonyObjectSkeleton *object, enum tcore_notification_command command, unsigned int data_len, const void *data);
 
-enum dbus_tapi_sim_slot_id get_sim_slot_id_by_cp_name(char *cp_name);
+enum dbus_tapi_sim_slot_id get_sim_slot_id_by_cp_name(const char *cp_name);
 
-#endif
+#endif /* __COMMON_H__ */

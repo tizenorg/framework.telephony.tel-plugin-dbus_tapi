@@ -57,6 +57,8 @@
 			<arg direction="out" type="s" name="hardware"/>
 			<arg direction="out" type="s" name="rf_cal_date"/>
 			<arg direction="out" type="s" name="product_code"/>
+			<arg direction="out" type="s" name="prl_version"/>
+			<arg direction="out" type="s" name="eri_version"/>
 		</method>
 
 		<!--
@@ -92,6 +94,12 @@
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
+		<method name="GetDeviceInfo">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="s" name="vendor_name"/>
+			<arg direction="out" type="s" name="device_name"/>
+		</method>
+
 		<!--
 			Power:
 			@status: Online(0), Offline(1), Error(2), Unknown(3)
@@ -111,6 +119,18 @@
 
 		<!-- power: Power status -->
 		<property name="power" type="i" access="read"/>
+
+		<!--
+			dongle_status: Dongle insertion status
+			0=Removed, 1=Inserted
+		-->
+		<property name="dongle_status" type="i" access="read"/>
+
+		<!--
+			dongle_login: Dongle login status
+			0=Failure, 1=Success
+		-->
+		<property name="dongle_login" type="i" access="read"/>
 
 	</interface>
 

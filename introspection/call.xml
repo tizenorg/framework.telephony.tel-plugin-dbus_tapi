@@ -9,17 +9,17 @@
 		</method>
 
 		<method name="Answer">
-			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="in" type="i" name="call_handle"/>
 			<arg direction="in" type="i" name="answer_type"/>
 			<arg direction="out" type="i" name="result"/>
-			<arg direction="out" type="i" name="call_id"/>
+			<arg direction="out" type="i" name="call_handle"/>
 		</method>
 
 		<method name="End">
-			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="in" type="i" name="call_handle"/>
 			<arg direction="in" type="i" name="end_type"/>
 			<arg direction="out" type="i" name="result"/>
-			<arg direction="out" type="i" name="call_id"/>
+			<arg direction="out" type="i" name="call_handle"/>
 			<arg direction="out" type="i" name="end_type"/>
 		</method>
 
@@ -40,39 +40,39 @@
 		</method>
 
 		<method name="Active">
-			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="in" type="i" name="call_handle"/>
 			<arg direction="out" type="i" name="result"/>
-			<arg direction="out" type="i" name="call_id"/>
+			<arg direction="out" type="i" name="call_handle"/>
 		</method>
 
 		<method name="Hold">
-			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="in" type="i" name="call_handle"/>
 			<arg direction="out" type="i" name="result"/>
-			<arg direction="out" type="i" name="call_id"/>
+			<arg direction="out" type="i" name="call_handle"/>
 		</method>
 
 		<method name="Swap">
-			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="in" type="i" name="call_handle"/>
 			<arg direction="out" type="i" name="result"/>
-			<arg direction="out" type="i" name="call_id"/>
+			<arg direction="out" type="i" name="call_handle"/>
 		</method>
 
 		<method name="Join">
-			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="in" type="i" name="call_handle"/>
 			<arg direction="out" type="i" name="result"/>
-			<arg direction="out" type="i" name="call_id"/>
+			<arg direction="out" type="i" name="call_handle"/>
 		</method>
 
 		<method name="Split">
-			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="in" type="i" name="call_handle"/>
 			<arg direction="out" type="i" name="result"/>
-			<arg direction="out" type="i" name="call_id"/>
+			<arg direction="out" type="i" name="call_handle"/>
 		</method>
 
 		<method name="Transfer">
-			<arg direction="in" type="i" name="call_id"/>
+			<arg direction="in" type="i" name="call_handle"/>
 			<arg direction="out" type="i" name="result"/>
-			<arg direction="out" type="i" name="call_id"/>
+			<arg direction="out" type="i" name="call_handle"/>
 		</method>
 
 		<method name="Deflect">
@@ -91,13 +91,14 @@
 		</method>
 
 		<method name="GetStatus">
-			<arg direction="in" type="i" name="call_id"/>
-			<arg direction="out" type="i" name="call_id"/>
+			<arg direction="in" type="i" name="call_handle"/>
+			<arg direction="out" type="i" name="call_handle"/>
 			<arg direction="out" type="s" name="call_number"/>
 			<arg direction="out" type="i" name="call_type"/>
 			<arg direction="out" type="b" name="call_direction"/>
 			<arg direction="out" type="i" name="call_state"/>
 			<arg direction="out" type="b" name="call_multiparty_state"/>
+			<arg direction="out" type="b" name="is_volte_call"/>
 		</method>
 
 		<method name="GetStatusAll">
@@ -168,94 +169,118 @@
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
+		<method name="Modify">
+			<arg direction="in" type="i" name="call_handle"/>
+			<arg direction="in" type="i" name="call_type"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<method name="ConfirmModify">
+			<arg direction="in" type="i" name="call_handle"/>
+			<arg direction="in" type="i" name="confirm_type"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
 		<signal name="VoiceCallStatusIdle">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 			<arg type="i" name="end_cause"/>
 			<arg type="i" name="start_time"/>
 			<arg type="i" name="end_time"/>
 		</signal>
 
 		<signal name="VoiceCallStatusDialing">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="VoiceCallStatusAlert">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="VoiceCallStatusActive">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="VoiceCallStatusHeld">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="VoiceCallStatusIncoming">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
+			<arg type="i" name="cli_mode"/>
+			<arg type="i" name="cli_cause"/>
+			<arg type="s" name="call_number"/>
+			<arg type="b" name="forwarded"/>
+			<arg type="i" name="active_line"/>
+			<arg type="s" name="call_name"/>
 		</signal>
 
 		<signal name="VideoCallStatusIdle">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 			<arg type="i" name="end_cause"/>
 			<arg type="i" name="start_time"/>
 			<arg type="i" name="end_time"/>
 		</signal>
 
 		<signal name="VideoCallStatusDialing">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="VideoCallStatusAlert">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="VideoCallStatusActive">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="VideoCallStatusIncoming">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
+			<arg type="i" name="cli_mode"/>
+			<arg type="i" name="cli_cause"/>
+			<arg type="s" name="call_number"/>
+			<arg type="b" name="forwarded"/>
+			<arg type="i" name="active_line"/>
+			<arg type="s" name="call_name"/>
 		</signal>
 
 		<signal name="Waiting">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="Forwarded">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="ForwardedCall">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="BarredIncoming">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="BarredOutgoing">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="ForwardConditional">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="ForwardUnconditional">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="CallActive">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="CallHeld">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="CallJoined">
-			<arg type="i" name="call_id"/>
+			<arg type="i" name="call_handle"/>
 		</signal>
 
 		<signal name="CallPrivacyMode">
@@ -309,6 +334,17 @@
 
 		<signal name="CallPreferredVoiceSubscription">
 			<arg type="i" name="preferred_subs"/>
+		</signal>
+
+		<signal name="CallModifyRequest">
+			<arg type="i" name="call_handle"/>
+			<arg type="i" name="call_type"/>
+		</signal>
+
+
+		<signal name="CallFallback">
+			<arg type="i" name="call_handle"/>
+			<arg type="i" name="fallback_to"/>
 		</signal>
 	</interface>
 

@@ -9,6 +9,7 @@
 	<interface name="org.tizen.telephony.sms">
 		<!--
 			SendMsg:
+			@format: Message format 3gpp or 3gpp2
 			@sca: Service Center Address
 			@tpdu_length: Size of the array which is actual TPDU message
 			@tpdu_data: SMS TPDU message
@@ -18,6 +19,7 @@
 			Sends an SMS message to the networ
 		-->
 		<method name="SendMsg">
+			<arg direction="in" type="i" name="format"/>
 			<arg direction="in" type="v" name="sca"/>
 			<arg direction="in" type="i" name="tpdu_length"/>
 			<arg direction="in" type="v" name="tpdu_data"/>
@@ -41,6 +43,7 @@
 			<arg direction="out" type="i" name="result"/>
 			<arg direction="out" type="i" name="sim_index"/>
 			<arg direction="out" type="i" name="msg_status"/>
+			<arg direction="out" type="i" name="format"/>
 			<arg direction="out" type="v" name="sca"/>
 			<arg direction="out" type="i" name="tpdu_length"/>
 			<arg direction="out" type="v" name="tpdu_data"/>
@@ -58,6 +61,7 @@
 			Saves a message to SIM storage area.
 		-->
 		<method name="SaveMsg">
+			<arg direction="in" type="i" name="format"/>
 			<arg direction="in" type="i" name="msg_status"/>
 			<arg direction="in" type="v" name="sca"/>
 			<arg direction="in" type="i" name="tpdu_length"/>
@@ -139,7 +143,7 @@
 			GetCbConfig:
 			@result: Success(0)
 			@3gppType: Type of 3gpp, 0x01 . 3gpp. 0x02 . 3gpp2(CDMA)
-			@cbEnable: CB service state. If cb_enabled is true then cell broadcast service will be enabled 
+			@cbEnable: CB service state. If cb_enabled is true then cell broadcast service will be enabled
 			@msgIdMaxCount: CB Channel List Max Count
 			@msgIdCount: CB message ID count
 			@msgId: CB message ID information
@@ -189,12 +193,14 @@
 
 		<!--
 			GetPrefBearer:
+			@bearerType: the bearer type. PS_ONLY(1), CS_ONLY(2), PS_PREFERRED(3), CS_PREFERRED(4), NO_PREFERRED_BEARER(5)
 			@result: Success(0)
 
-			Get SMS preferred bearer on which SMS has to be transmitted.
+			Get SMS preferred bearer on which SMS is transmitted.
 		-->
 		<method name="GetPrefBearer">
 			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="i" name="bearerType"/>
 		</method>
 
 		<!--
@@ -220,9 +226,10 @@
 			Send a delivery report for the received incoming SMS to the network.
 		-->
 		<method name="SetDeliveryReport">
-			<arg direction="in" type="v" name="sca"/>
+			<arg direction="in" type="i" name="format"/>
+			<arg direction="in" type="s" name="sca"/>
 			<arg direction="in" type="i" name="tpdu_length"/>
-			<arg direction="in" type="v" name="tpdu_data"/>
+			<arg direction="in" type="s" name="tpdu_data"/>
 			<arg direction="in" type="i" name="rpCause"/>
 			<arg direction="out" type="i" name="result"/>
 		</method>
@@ -253,7 +260,7 @@
 			@destAddr_DialNumLen: TP-DA(TP-destination address). length of address. If Service center address is not set, then this will be zero
 			@destAddr_Ton: TP-DA, Type of number
 			@destAddr_Npi: TP-DA, Numbering plan identification
-			@destAddr_DiallingNum: TP-DA, destination address. If Address not set, then set to 0xFF 
+			@destAddr_DiallingNum: TP-DA, destination address. If Address not set, then set to 0xFF
 			@svcCntrAddr_DialNumLen: TP-service center address. length of address
 			@SvcCntrAddr_Ton: TP-service center address. Type of number
 			@svcCntrAddr_Npi: TP-service center address. Numbering plan identification
@@ -295,7 +302,7 @@
 			@destAddr_DialNumLen: TP-DA(TP-destination address). length of address. If Service center address is not set, then this will be zero
 			@destAddr_Ton: TP-DA, Type of number
 			@destAddr_Npi: TP-DA, Numbering plan identification
-			@destAddr_DiallingNum: TP-DA, destination address. If Address not set, then set to 0xFF 
+			@destAddr_DiallingNum: TP-DA, destination address. If Address not set, then set to 0xFF
 			@svcCntrAddr_DialNumLen: TP-service center address. length of address
 			@SvcCntrAddr_Ton: TP-service center address. Type of number
 			@svcCntrAddr_Npi: TP-service center address. Numbering plan identification
@@ -351,30 +358,34 @@
 
 		<!--
 			IncommingMsg:
+			@format: Message format 3gpp or 3gpp2
                         @sca: Service Center Address
-                        @msgLength: Size of the array which is actual TPDU message
-                        @tpdu: SMS TPDU message
+                        @msgLength: Size of the array which is actual 3GPP and 3GPP2 TPDU message
+                        @tpdu: SMS TPDU 3GPP and 3GPP2 message
 
 			This is an unsolicited Incoming SMS Event
 		-->
 		<signal name="IncommingMsg">
-			<arg type="v" name="sca"/>
+			<arg type="i" name="format"/>
+			<arg type="s" name="sca"/>
 			<arg type="i" name="msgLength"/>
-			<arg type="v" name="tpdu"/>
+			<arg type="s" name="tpdu"/>
 		</signal>
 
 		<!--
 			IncommingCbMsg:
                         @cbMsgType: Cell Broadcast  message type. CBS(1), SCHEDULE(2), CBS41(3), INVALID(4)
                         @msgLength: Size of the array which is actual TPDU message
-                        @tpdu: Cell broadcast message data[Refer 3GPP TS 23.041 9.4.1
+                        @tpdu: Cell broadcast message data for both 3GPP and 3GPP2
+                        [GSM: Refer 3GPP TS 23.041 9.4.1]
+                        [CDMA:Refer 3GPP2 C.S0015-A section 3.4.2.2]
 
 			This is an unsolicited Incoming cell broadcast message
 		-->
 		<signal name="IncommingCbMsg">
 			<arg type="i" name="cbMsgType"/>
 			<arg type="i" name="msgLength"/>
-			<arg type="v" name="tpdu"/>
+			<arg type="s" name="tpdu"/>
 		</signal>
 
 		<!--
@@ -405,10 +416,11 @@
 			SmsReady:
 			@status: Ready indication
 
-			SMS Ready indication 
+			SMS Ready indication
 		-->
+
 		<signal name="SmsReady">
-			<arg type="b" name="status"/>
+			<arg type="i" name="status"/>
 		</signal>
 
 	</interface>

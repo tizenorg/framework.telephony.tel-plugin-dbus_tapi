@@ -7,7 +7,7 @@
 
 	-->
 	<interface name="org.tizen.telephony.SAT">
-	
+
 		<method name="GetMainMenuInfo">
 			<arg direction="out" type="i" name="result"/>
 			<arg direction="out" type="i" name="command_id"/>
@@ -23,28 +23,28 @@
 			<arg direction="out" type="v" name="icon_list"/>
 			-->
 		</method>
-						
+
 		<method name="SendUiDisplayStatus">
 			<arg direction="in" type="i" name="command_id"/>
 			<arg direction="in" type="b" name="display_status"/>
 			<arg direction="out" type="i" name="result"/>
 		</method>
-		
+
 		<method name="SendUserConfirm">
 			<arg direction="in" type="i" name="command_id"/>
 			<arg direction="in" type="i" name="command_type"/>
 			<arg direction="in" type="i" name="user_confirm_type"/>
 			<arg direction="in" type="v" name="additional_data"/>
 			<arg direction="out" type="i" name="result"/>
-		</method>		
-				
+		</method>
+
 		<method name="SelectMenu">
 			<arg direction="in" type="i" name="item_identifier"/>
 			<arg direction="in" type="b" name="help_request"/>
 			<arg direction="out" type="i" name="result"/>
 			<arg direction="out" type="i" name="envelop_rsp"/>
 		</method>
-		
+
 		<method name="DownloadEvent">
 			<arg direction="in" type="i" name="event_download_type"/>
 			<arg direction="in" type="i" name="src_device"/>
@@ -75,7 +75,7 @@
 			<arg type="v" name="icon_list"/>
 			-->
 		</signal>
-		
+
 		<signal name="DisplayText">
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
@@ -87,9 +87,9 @@
 			<!--
 			Enable below tag if SAT icon is supported...
 			<arg type="v" name="icon_id"/>
-			-->			
+			-->
 		</signal>
-		
+
 		<signal name="SelectItem">
 			<arg type="i" name="command_id"/>
 			<arg type="b" name="help_info"/>
@@ -104,7 +104,7 @@
 			<arg type="v" name="icon_list"/>
 			-->
 		</signal>
-		
+
 		<signal name="GetInkey">
 			<arg type="i" name="command_id"/>
 			<arg type="i" name="key_type"/>
@@ -119,7 +119,7 @@
 			<arg type="v" name="icon_id"/>
 			-->
 		</signal>
-		
+
 		<signal name="GetInput">
 			<arg type="i" name="command_id"/>
 			<arg type="i" name="input_alphabet_type"/>
@@ -137,7 +137,7 @@
 			<arg type="v" name="icon_id"/>
 			-->
 		</signal>
-		
+
 		<signal name="PlayTone">
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
@@ -149,7 +149,7 @@
 			<arg type="i" name="tone_type"/>
 			<arg type="i" name="duration"/>
 		</signal>
-				
+
 		<signal name="SendSMS">
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
@@ -167,7 +167,7 @@
 			<arg type="v" name="tpdu_data"/>
 			<arg type="i" name="tpdu_data_len"/>
 		</signal>
-		
+
 		<signal name="SendSS">
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
@@ -207,9 +207,9 @@
 			<arg type="s" name="call_number"/>
 			<arg type="i" name="duration"/>
 		</signal>
-		
+
 		<signal name="SetupEventList">
-			<arg type="i" name="event_cnt"/>
+			<arg type="y" name="event_cnt"/>
 			<arg type="v" name="evt_list"/>
 		</signal>
 
@@ -222,7 +222,7 @@
 			<arg type="v" name="icon_id"/>
 			-->
 		</signal>
-				
+
 		<signal name="OpenChannel">
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
@@ -254,7 +254,7 @@
 			-->
 			<arg type="i" name="channel_id"/>
 		</signal>
-				
+
 		<signal name="ReceiveData">
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
@@ -290,10 +290,10 @@
 			<arg type="i" name="refresh_type"/>
 			<arg type="v" name="file_list"/>
 		</signal>
-		
+
 		<signal name="MoreTime">
 		</signal>
-		
+
 		<signal name="SendDtmf">
 			<arg type="i" name="command_id"/>
 			<arg type="s" name="text"/>
@@ -305,7 +305,7 @@
 			<arg type="s" name="dtmf_str"/>
 			<arg type="i" name="dtmf_str_len"/>
 		</signal>
-		
+
 		<signal name="LaunchBrowser">
 			<arg type="i" name="command_id"/>
 			<arg type="i" name="launch_type"/>
@@ -321,11 +321,11 @@
 			<arg type="v" name="icon_id"/>
 			-->
 		</signal>
-		
+
 		<signal name="ProvideLocalInfo">
 			<arg type="i" name="info_type"/>
 		</signal>
-		
+
 		<signal name="LanguageNotification">
 			<arg type="i" name="command_id"/>
 			<arg type="i" name="language"/>
@@ -335,7 +335,7 @@
 		<signal name="EndProactiveSession">
 			<arg type="i" name="command_type"/>
 		</signal>
-		
+
 		<signal name="CallControlResult">
 			<arg type="i" name="call_ctrl_result"/>
 			<arg type="s" name="text"/>
@@ -361,5 +361,5 @@
                 </signal>
 
 	</interface>
-	
+
 </node>

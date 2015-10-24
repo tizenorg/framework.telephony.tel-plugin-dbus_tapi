@@ -166,19 +166,17 @@
 
 		<!--
 			GetServingNetwork:
+			@info: A set of key/dict pairs with serving network information.
 			@act: Access technology. GSM(1), GPRS(2), EGPRS(3), UMTS(4), IS95A(17), IS95B(18), EHRPD(25), LTE(33)
 			@plmn: Plmn string.
 			@status: Registration status. NOT REGISTER(1), REGISTER HOME(2), SEARCHING(3), DENIED(4), UNKNOWN(5), REGISTER ROAM(6)
 			@lac: Location Area Code.
 			@result: Success(0)
 
-			Set power on attach configuration
+			Get Serving Network information
 		-->
 		<method name="GetServingNetwork">
-			<arg direction="out" type="i" name="act"/>
-			<!-- arg direction="out" type="i" name="status" -->
-			<arg direction="out" type="s" name="plmn"/>
-			<arg direction="out" type="i" name="lac"/>
+			<arg direction="out" type="a{sv}" name="info"/>
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
@@ -271,6 +269,33 @@
 		-->
 		<method name="GetDefaultSubscription">
 			<arg direction="out" type="i" name="default_subs"/>
+			<arg direction="out" type="i" name="result"/>
+		</method>
+
+		<!--
+			GetNetworkInfo:
+			@changed_type: changed property type
+			@circuit_status: Circuit service status.
+			@packet_status: Packet service status.
+			@service_type: Service type.
+			@roaming_status: Roaming status.
+			@access_technology: access_technology
+			@name_option: 0=None, 1=SIM(EFspn), 2=Operator, 3=Any(SIM/Network)
+			@plmn: Plmn string.
+			@spn_name: Service Provider Name
+			@network_name: Network Operator Name
+			@result: Success(0)
+
+			Get Network information.
+		-->
+		<method name="GetNetworkInfo">
+			<arg direction="out" type="i" name="changed_type"/>
+			<arg direction="out" type="i" name="service_type"/>
+			<arg direction="out" type="b" name="roaming_status"/>
+			<arg direction="out" type="i" name="name_option"/>
+			<arg direction="out" type="s" name="plmn"/>
+			<arg direction="out" type="s" name="spn_name"/>
+			<arg direction="out" type="s" name="network_name"/>
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
@@ -398,6 +423,30 @@
 			<arg type="i" name="default_subs"/>
 		</signal>
 
+		<!--
+			PropertyInfo:
+			@changed_type: changed property type
+			@circuit_status: Circuit service status.
+			@packet_status: Packet service status.
+			@service_type: Service type.
+			@roaming_status: Roaming status.
+			@access_technology: access_technology
+			@name_option: 0=None, 1=SIM(EFspn), 2=Operator, 3=Any(SIM/Network)
+			@plmn: Plmn string.
+			@spn_name: Service Provider Name
+			@network_name: Network Operator Name
+			Network Property information.
+		-->
+		<signal name="PropertyInfo">
+			<arg type="i" name="changed_type"/>
+			<arg type="i" name="service_type"/>
+			<arg type="b" name="roaming_status"/>
+			<arg type="i" name="name_option"/>
+			<arg type="s" name="plmn"/>
+			<arg type="s" name="spn_name"/>
+			<arg type="s" name="network_name"/>
+		</signal>
+
 		<!-- sig_dbm : Signal Strength DBM -->
 		<property name="sig_dbm" type="i" access="read"/>
 
@@ -473,6 +522,18 @@
 			 Service Provider Name
 		-->
 		<property name="spn_name" type="s" access="read"/>
+
+		<!--
+			ims_voice_status: IMS Voice Support Status on LTE
+			-1=UNKNOWN, 0=NOT SUPPORT, 1=SUPPORT
+		-->
+		<property name="ims_voice_status" type="i" access="read"/>
+
+		<!--
+			volte_enable
+			0=Not available, 1=Available
+		-->
+		<property name="volte_enable" type="i" access="read"/>
 
 	</interface>
 

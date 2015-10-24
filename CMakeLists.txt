@@ -20,8 +20,8 @@ pkg_check_modules(pkgs REQUIRED
 	tcore
 	aul
 	appsvc
+	capi-appfw-app-manager
 	security-server
-	pkgmgr
 )
 
 FOREACH(flag ${pkgs_CFLAGS})
@@ -45,31 +45,29 @@ ADD_DEFINITIONS("-DEXPORT_API=__attribute__((visibility(\"default\")))")
 #ADD_DEFINITIONS("-DTIZEN_USE_DESKTOP_FILE")
 #ADD_DEFINITIONS("-DTIZEN_SUPPORT_SAT_ICON")
 
-IF (BOARD_PLATFORM_SPREADTRUM)
-ADD_DEFINITIONS("-DTIZEN_PLATFORM_LITE")
-ELSE()
+IF (BOARD_PLATFORM_QCOM)
 ADD_DEFINITIONS("-DTIZEN_PLATFORM_USE_QCOM_QMI")
-ENDIF (BOARD_PLATFORM_SPREADTRUM)
+ENDIF (BOARD_PLATFORM_QCOM)
 
 MESSAGE(${CMAKE_C_FLAGS})
 MESSAGE(${pkgs_LDFLAGS})
 
 SET(SRCS
-		src/desc-dbus.c
-		src/common.c
-		src/network.c
-		src/phonebook.c
-		src/sim.c
-		src/sap.c
-		src/sms.c
-		src/sat.c
-		src/sat_manager.c
-		src/sat_ui_support/sat_ui_support.c
-		src/ss.c
-		src/call.c
-		src/modem.c
-		src/gps.c
-		src/oem.c
+	src/desc-dtapi.c
+	src/dtapi_main.c
+	src/dtapi_common.c
+	src/dtapi_network.c
+	src/dtapi_phonebook.c
+	src/dtapi_sim.c
+	src/dtapi_sap.c
+	src/dtapi_sms.c
+	src/dtapi_sat.c
+	src/dtapi_sat_manager.c
+	src/sat_ui_support/sat_ui_support.c
+	src/dtapi_ss.c
+	src/dtapi_call.c
+	src/dtapi_modem.c
+	src/dtapi_oem.c
 )
 
 ADD_CUSTOM_COMMAND(
@@ -86,7 +84,6 @@ ADD_CUSTOM_COMMAND(
 	${INTROSPECTION}/call.xml
 	${INTROSPECTION}/ss.xml
 	${INTROSPECTION}/modem.xml
-	${INTROSPECTION}/gps.xml
 	${INTROSPECTION}/oem.xml
 	COMMENT "Generating GDBus .c/.h")
 

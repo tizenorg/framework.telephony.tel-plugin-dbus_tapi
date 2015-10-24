@@ -1,10 +1,10 @@
 %define major 0
-%define minor 3
-%define patchlevel 49
+%define minor 5
+%define patchlevel 5
 
 Name:           tel-plugin-dbus_tapi
 Version:        %{major}.%{minor}.%{patchlevel}
-Release:        5
+Release:        2
 License:        Apache-2.0
 Summary:        dbus-tapi plugin for telephony
 Group:          System/Libraries
@@ -13,12 +13,12 @@ BuildRequires:  cmake
 BuildRequires:  python-xml
 BuildRequires:  python
 BuildRequires:  pkgconfig(appsvc)
+BuildRequires:  pkgconfig(capi-appfw-app-manager)
 BuildRequires:  pkgconfig(aul)
 BuildRequires:  pkgconfig(gio-2.0)
 BuildRequires:  pkgconfig(gio-unix-2.0)
 BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  pkgconfig(libxml-2.0)
-BuildRequires:  pkgconfig(pkgmgr)
 BuildRequires:  pkgconfig(security-server)
 BuildRequires:  pkgconfig(tcore)
 
@@ -34,8 +34,7 @@ dbus-tapi plugin for telephony
 %build
 versionint=$[%{major} * 1000000 + %{minor} * 1000 + %{patchlevel}]
 
-cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix} -DVERSION=$versionint  -DSYSCONFDIR=%{_sysconfdir} \
-	-DBOARD_PLATFORM_SPREADTRUM=1
+cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix} -DVERSION=$versionint \
 
 make %{?_smp_mflags}
 
@@ -49,7 +48,7 @@ mkdir -p %{buildroot}%{_datadir}/license
 
 %files
 %manifest tel-plugin-dbus_tapi.manifest
-%defattr(-,root,root,-)
+%defattr(644,system,system,-)
 #%doc COPYING
 %{_libdir}/telephony/plugins/*
 %{_datadir}/license/tel-plugin-dbus_tapi

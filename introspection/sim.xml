@@ -251,6 +251,35 @@
 			<arg direction="out" type="i" name="result"/>
 		</method>
 
+		<method name="GetImpi">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="s" name="impi"/>
+		</method>
+
+		<method name="GetImpu">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="aa{sv}" name="list"/>
+		</method>
+
+		<method name="GetDomain">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="s" name="domain"/>
+		</method>
+
+		<method name="GetPcscf">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="aa{sv}" name="list"/>
+		</method>
+
+		<method name="GetAppList">
+			<arg direction="out" type="y" name="app_list"/>
+		</method>
+
+		<method name="GetIsimServiceTable">
+			<arg direction="out" type="i" name="result"/>
+			<arg direction="out" type="v" name="ist"/>
+		</method>
+
 		<signal name="Status">
 			<arg type="i" name="status"/>
 		</signal>

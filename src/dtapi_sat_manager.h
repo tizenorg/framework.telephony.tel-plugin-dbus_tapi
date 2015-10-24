@@ -23,8 +23,8 @@
 
 #include <tcore.h>
 #include <type/sat.h>
-#include "common.h"
 
+#include "dtapi_common.h"
 
 typedef union {
 	struct tel_sat_display_text_tlv displayTextInd; /**<	Parsed proactive command info from TLV to Telephony data type - display text	*/
