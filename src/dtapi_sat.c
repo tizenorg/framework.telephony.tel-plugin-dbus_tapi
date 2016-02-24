@@ -113,7 +113,6 @@ static gboolean on_sat_get_main_menu_info(TelephonySAT *sat,
 	main_menu = __sat_get_main_menu(ctx, GET_CP_NAME(invocation));
 	if (!main_menu) {
 		err("NO Main Menu");
-		FAIL_RESPONSE(invocation, DEFAULT_MSG_REQ_FAILED);
 		return TRUE;
 	}
 

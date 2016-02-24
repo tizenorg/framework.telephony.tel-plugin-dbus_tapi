@@ -1,6 +1,6 @@
 %define major 0
 %define minor 5
-%define patchlevel 5
+%define patchlevel 1
 
 Name:           tel-plugin-dbus_tapi
 Version:        %{major}.%{minor}.%{patchlevel}

@@ -839,55 +839,6 @@ static gboolean on_network_get_roaming_preference(TelephonyNetwork *network,
 	return TRUE;
 }
 
-static gboolean on_network_get_network_info(TelephonyNetwork *network,
-	GDBusMethodInvocation *invocation, gpointer user_data)
-{
-	struct custom_data *ctx = user_data;
-	TcorePlugin *plugin;
-	CoreObject *co_network;
-	NetworkPropertyInfo network_info;
-	char *cpname;
-	TReturn result = TCORE_RETURN_SUCCESS;
-
-	if (!check_access_control(invocation, AC_NETWORK, "r"))
-		return TRUE;
-
-	cpname = GET_CP_NAME(invocation);
-
-	plugin = tcore_server_find_plugin(ctx->server, cpname);
-	co_network = tcore_plugin_ref_core_object(plugin, CORE_OBJECT_TYPE_NETWORK);
-
-	memset(&network_info, 0x0, sizeof(NetworkPropertyInfo));
-
-	/* Fetch Network information */
-	__get_current_network_status(co_network, &network_info,
-		NET_PROP_SVC_TYPE | NET_PROP_ROAM | NET_PROP_PLMN
-		| NET_PROP_NAME_OPTION | NET_PROP_SPN | NET_PROP_NWNAME);
-
-	network_info.type = (NET_PROP_SVC_TYPE|NET_PROP_ROAM|NET_PROP_NAME_OPTION);
-
-	if (network_info.plmn && strlen(network_info.plmn) != 0)
-		network_info.type |= NET_PROP_PLMN;
-	if (network_info.spn && strlen(network_info.spn) != 0)
-		network_info.type |= NET_PROP_SPN;
-	if (network_info.nwname && strlen(network_info.nwname) != 0)
-		network_info.type |= NET_PROP_NWNAME;
-
-	info("[%s] type:[0x%x] SVC:[%d] Roam:[%d] Name option:[%d] PLMN:[%s] SPN:[%s] NW name:[%s]",
-		cpname, network_info.type, network_info.svc_type, network_info.roaming, network_info.name_option,
-		network_info.plmn, network_info.spn, network_info.nwname);
-
-	/* Send response */
-	telephony_network_complete_get_network_info(network,
-		invocation,
-		network_info.type, network_info.svc_type,
-		network_info.roaming, network_info.name_option,
-		network_info.plmn, network_info.spn, network_info.nwname,
-		result);
-
-	return TRUE;
-}
-
 gboolean dbus_plugin_setup_network_interface(TelephonyObjectSkeleton *object,
 	struct custom_data *ctx)
 {
@@ -985,10 +936,6 @@ gboolean dbus_plugin_setup_network_interface(TelephonyObjectSkeleton *object,
 	g_signal_connect(network,
 		"handle-get-roaming-preference",
 		G_CALLBACK(on_network_get_roaming_preference), ctx);
-
-	g_signal_connect(network,
-		"handle-get-network-info",
-		G_CALLBACK(on_network_get_network_info), ctx);
 
 	/*
 	 * Initialize DBUS properties

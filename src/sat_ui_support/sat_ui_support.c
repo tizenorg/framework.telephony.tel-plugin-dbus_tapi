@@ -99,12 +99,10 @@ static gboolean __dispatch_on_new_thread(gchar *name, GThreadFunc thread_cb, gpo
 		return FALSE;
 	}
 	thread = g_thread_new(name, thread_cb, thread_data);
-	if (thread == NULL) {
+	if (thread == NULL)
 		return FALSE;
-	} else {
+	else
 		dbg("Thread %p is created for %s", thread, name);
-		g_thread_unref(thread);
-	}
 
 	return TRUE;
 }

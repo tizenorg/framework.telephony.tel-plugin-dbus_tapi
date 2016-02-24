@@ -273,33 +273,6 @@
 		</method>
 
 		<!--
-			GetNetworkInfo:
-			@changed_type: changed property type
-			@circuit_status: Circuit service status.
-			@packet_status: Packet service status.
-			@service_type: Service type.
-			@roaming_status: Roaming status.
-			@access_technology: access_technology
-			@name_option: 0=None, 1=SIM(EFspn), 2=Operator, 3=Any(SIM/Network)
-			@plmn: Plmn string.
-			@spn_name: Service Provider Name
-			@network_name: Network Operator Name
-			@result: Success(0)
-
-			Get Network information.
-		-->
-		<method name="GetNetworkInfo">
-			<arg direction="out" type="i" name="changed_type"/>
-			<arg direction="out" type="i" name="service_type"/>
-			<arg direction="out" type="b" name="roaming_status"/>
-			<arg direction="out" type="i" name="name_option"/>
-			<arg direction="out" type="s" name="plmn"/>
-			<arg direction="out" type="s" name="spn_name"/>
-			<arg direction="out" type="s" name="network_name"/>
-			<arg direction="out" type="i" name="result"/>
-		</method>
-
-		<!--
 			RegistrationStatus:
 			@circuit: Circuit service status.
 			@packet: Packet service status.

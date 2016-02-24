@@ -52,20 +52,16 @@ typedef struct {
 	int ss_type;
 } CissInformation;
 
-static void __launch_ciss_information(const struct tnoti_ss_information *ss_info, enum dbus_tapi_sim_slot_id slot_id)
+static void __launch_ciss_information(const struct tnoti_ss_information *ss_info)
 {
 	gchar *encoded_data;
 	CissInformation ciss_inform;
-	char slot_info[2] = {0,};
 
 	bundle *kb = NULL;
 
 	memset(&ciss_inform, 0x0, sizeof(CissInformation));
 	ciss_inform.err = ss_info->err;
 	ciss_inform.ss_type = ss_info->ss_type;
-
-	snprintf(slot_info, 2, "%d", slot_id);
-	dbg("slot_id : [%s]", slot_info);
 
 	dbg("Explicit launch CISS application by appsvc");
 
@@ -82,7 +78,6 @@ static void __launch_ciss_information(const struct tnoti_ss_information *ss_info
 	appsvc_add_data(kb, "CISS_LAUNCHING_MODE", "RESP");
 	appsvc_add_data(kb, "KEY_EVENT_TYPE", "200");
 	appsvc_add_data(kb, "KEY_ENCODED_DATA", encoded_data);
-	appsvc_add_data(kb, "KEY_SLOT_ID", slot_info);
 
 	dbg("CISS appsvc run!");
 	appsvc_run_service(kb, 0, NULL, NULL);
@@ -1167,7 +1162,6 @@ gboolean dbus_plugin_ss_notification(struct custom_data *ctx,
 
 	case TNOTI_SS_INFO: {
 		const struct tnoti_ss_information *ss_info = data;
-		enum dbus_tapi_sim_slot_id slot_id;
 
 		dbg("[%s] SS_INFO", cp_name);
 
@@ -1178,8 +1172,7 @@ gboolean dbus_plugin_ss_notification(struct custom_data *ctx,
 		/*
 		 * Launch CISS information.
 		 */
-		slot_id = get_sim_slot_id_by_cp_name(cp_name);
-		__launch_ciss_information(ss_info, slot_id);
+		__launch_ciss_information(ss_info);
 #if 0
 		/* Launch CISS application */
 		__launch_ciss(ss_info);
